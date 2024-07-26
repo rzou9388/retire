@@ -30,6 +30,15 @@
         hr {
             margin-bottom: 30px;
         }
+
+        tr.retirementAge td {
+            font-weight: bold;
+        }
+
+        tr.rmdAge td {
+            font-weight: bold;
+            color: red
+        }
     </style>
 </head>
 
@@ -80,52 +89,61 @@
         <hr />
         <p>
         <h5>Retirement</h5>
-        You are <b>{{data.person.age}}</b> years old, your current tax deferred retirement accounts have
-        <b>{{toDollar(data.person.pretaxAmount)}}</b> total,
-        you are planning to retire in <b>{{data.person.retirementAge-data.person.age}}</b> years in
-        <b>{{data.person.retirementYear}}</b> at the age of
-        <b>{{data.person.retirementAge}}</b>. Your life expectancy age: <b>__</b>.
-        <br />
-        </p>
-        <h5>Salary and 401K</h5>
-        Your current salary is <b>{{toDollar(data.person.salary)}}</b>, you are contributing
-        <b>{{toPercent(data.contrib.employeePercent)}}</b> percent of your
-        salary to 401k, and your employer contributes <b>{{toPercent(data.contrib.employerPercent)}}</b> of your
-        <b>{{toPercent(data.contrib.employeePercent)}}</b> contribution, total
-        contribution is <b>{{toPercent(data.contrib.total)}}</b> of your
-        salary each year. You expect annual merit increase of <b>{{toPercent(data.meritIncrease)}}</b>, at your
-        retirement age,
-        your salary would be <b>{{toDollar(data.person.retireSalary)}}</b>.
-        <br />
-        Based on <b>{{toPercent(data.rate)}}</b> annual return rate, and <b>{{toPercent(data.contrib.total)}}</b> yearly
-        contribution from employment,
-        when you retire, you'll have <b>{{toDollar(data.result)}}</b> in your tax deferred accounts.
-        <br />
-        When you reach age <b>{{data.rmd.age}}</b>, you'll be required to take "Required Minimum Distribution" from your
-        tax
-        deferred accounts.
-        <br />
-        Assuming that you don't take any money until you are <b>{{data.rmd.age}}</b>, your tax deferred accounts will
-        grow to
-        <b>{{toDollar(data.rmd.startAmount)}}</b>,
-        you'll be required to take out <b>_{{toDollar(data.rmd.startAmount)}}_</b> / ~28 =
-        <b>{{toDollar(data.rmd.startAmount
-            / 28)}}</b> each year, it'll be subject to higher tax bracket of <b>___</b>%.
+        <div style="ddisplay:none">
+            You are <b>{{data.person.age}}</b> years old, your current tax deferred retirement accounts have
+            <b>{{toDollar(data.person.pretaxAmount)}}</b> total,
+            you are planning to retire in <b>{{data.person.retirementAge-data.person.age}}</b> years in
+            <b>{{data.person.retirementYear}}</b> at the age of
+            <b>{{data.person.retirementAge}}</b>. Your life expectancy age is <b>{{data.person.dieAtAge}}</b>.
+            <br />
+            </p>
+            <h5>Salary and 401K</h5>
+            Your household salary is <b>{{toDollar(data.person.salary)}}</b>, you are contributing
+            <b>{{toPercent(data.contrib.employeePercent)}}</b> percent of your
+            salary to 401k, and your employer contributes <b>{{toPercent(data.contrib.employerPercent)}}</b> of your
+            <b>{{toPercent(data.contrib.employeePercent)}}</b> contribution, total
+            contribution is <b>{{toPercent(data.contrib.total)}}</b> of your
+            salary each year. You expect annual merit increase of <b>{{toPercent(data.meritIncrease)}}</b>, at your
+            retirement age,
+            your salary would be <b>{{toDollar(data.person.retirementAgeSalary)}}</b>.
+            <br />
+            Based on <b>{{toPercent(data.rate)}}</b> annual return rate, and <b>{{toPercent(data.contrib.total)}}</b>
+            yearly
+            contribution from employment,
+            when you retire, you'll have <b>{{toDollar(data.result)}}</b> in your tax deferred accounts.
+            <br />
+            When you reach age <b>{{data.rmd.age}}</b>, you'll be required to take "Required Minimum Distribution" from
+            your
+            tax
+            deferred accounts.
+            <br />
+            Assuming that you don't take any money until you are <b>{{data.rmd.age}}</b>, your tax deferred accounts
+            will
+            grow to
+            <b>{{toDollar(data.rmd.startAmount)}}</b>,
+            you'll be required to take out <b>_{{toDollar(data.rmd.startAmount)}}_</b> / ~28 =
+            <b>{{toDollar(data.rmd.startAmount
+                / 28)}}</b> each year, it'll be subject to higher tax bracket of <b>___</b>%.
 
-
-        </p>
-
-        <table class="table table-strip">
+        </div>
+        <table class="table table-strip table-hover">
             <thead>
                 <th>Age</th>
-                <th>Tax deferred amount</th>
+                <th>Tax deferred $$$</th>
                 <th>Year</th>
                 <th>Salary</th>
+                <th>401k Contrib ({{toPercent(data.contrib.total)}})</th>
+                <th>RMD</th>
             </thead>
             <tbody>
-                <tr v-for="yearly in data.yearlyTable">
+                <tr v-for="yearly in data.yearlyTable"
+                    :class="{retirementAge:yearly.age==data.person.retirementAge, rmdAge:yearly.age ==data.rmd.age}">
                     <td>{{yearly.age}}</td>
                     <td>{{toDollar(yearly.pretaxAmount)}}</td>
+                    <td>{{yearly.year}}</td>
+                    <td>{{toDollar(yearly.salary)}}</td>
+                    <td>{{toDollar(yearly.k401)}}</td>
+                    <td>{{toDollar(yearly.rmd)}}</td>
                 </tr>
             </tbody>
         </table>
@@ -148,27 +166,22 @@
                     inflation: 3.0,
                     meritIncrease: 2,
                     rmd: { age: 72, startAmount: 0 },
+                    distrib: { age: 56 },
                     contrib: { employeePercent: 6, employerPercent: 50, total: 9 },
-                    person: { age: 50, retirementAge: 55, pretaxAmount: 1000000, salary: 200000, ageToDie: 90 }
+                    person: { age: 50, retirementAge: 55, pretaxAmount: 1000000, salary: 200000, dieAtAge: 90 }
                 }
             }
         },
 
         methods: {
             calculate() {
-                console.log(this.data);
-                this.data.result = this.calculateYearly();
-                /*
-                    this.data.person.pretaxAmount,
-                    this.data.rate,
-                    this.data.person.retireInYears,
-                    this.data.person.salary * this.data.contrib.total / 100
-                );*/
+                this.calculateYearly();
+
                 this.data.person.retireInYears = this.data.person.retirementAge - this.data.person.age;
                 this.data.person.retirementYear = this.data.person.retireInYears + (new Date()).getFullYear();
                 this.data.contrib.total = this.data.contrib.employeePercent * (1 + this.data.contrib.employerPercent / 100);
                 this.data.rmd.startAmount = this.calculateCompound(this.data.result, this.data.rate, this.data.rmd.age - this.data.person.retirementAge);
-                this.data.person.retireSalary = this.calculateCompound(this.data.person.salary, 1 + this.data.meritIncrease / 100, this.data.person.retireInYears);
+                this.data.person.retirementAgeSalary = this.calculateCompound(this.data.person.salary, 1 + this.data.meritIncrease / 100, this.data.person.retireInYears);
 
                 localStorage.setItem("data", JSON.stringify(this.data));
             },
@@ -179,15 +192,52 @@
                 return val;
             },
             calculateYearly() {
-                for (let i = 0; i < this.data.person.ageToDie; i++) {
-                    this.data.person.pretaxAmount = this.data.person.pretaxAmount * (1 + this.data.rate / 100);
-                    this.data.yearlyTable.push({
-                        age: this.data.person.age++,
-                        pretaxAmount: this.data.person.pretaxAmount
-                    });
-                    console.table(this.yearlyTable);
+                this.data.yearlyTable = [];
+                let age = this.data.person.age;
+                let year = (new Date()).getFullYear();
+                let salary = this.data.person.salary;
+                let k401 = salary * (this.data.contrib.total) / 100;
+                let pretaxAmount = this.data.person.pretaxAmount + k401;
+                let rmd = 0;
+                let yearly = {
+                    age: age,
+                    pretaxAmount: pretaxAmount,
+                    year: year,
+                    salary: salary,
+                    k401: k401,
+                    rmd: rmd
+                };
+                this.data.yearlyTable.push(yearly);
+
+                for (let i = 0; i < this.data.person.dieAtAge - this.data.person.age; i++) {
+                    age++;
+                    year++;
+                    //before retirement
+                    if (age <= this.data.person.retirementAge) {
+                        salary = salary * (1 + this.data.meritIncrease / 100);
+                    }
+                    else {
+                        salary = 0;
+                    }
+                    k401 = salary * (this.data.contrib.total) / 100;
+                    pretaxAmount = pretaxAmount * (1 + this.data.rate / 100) + k401;
+
+                    //rmd age 72
+                    if (age >= this.data.rmd.age) {
+                        rmd = pretaxAmount / (this.data.person.dieAtAge - this.data.rmd.age);
+                    }
+                    let yearly = {
+                        age: age,
+                        pretaxAmount: pretaxAmount,
+                        year: year,
+                        salary: salary,
+                        k401: k401,
+                        rmd: rmd
+                    };
+                    this.data.yearlyTable.push(yearly);
                 }
-                this.data.result = this.data.person.pretaxAmount;
+                this.data.result = pretaxAmount;
+                console.table(this.data.yearlyTable);
             },
             // Util functions
             toDollar(val) {
