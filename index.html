@@ -37,113 +37,249 @@
 
         tr.rmdAge td {
             font-weight: bold;
-            color: red
+            color: orange
+        }
+
+        h5,
+        h3 {
+            margin-top: 30px
+        }
+
+        .accordion-button {
+            font-weight: 555;
+            text-decoration: underline;
         }
     </style>
 </head>
 
-<body onload="document.getElementsByTagName('input')[0].focus()">
-    <button style="width:100%" class="btn btn-info"
-        onclick="localStorage.clear();window.location.reload()">Reset</button>
+<body 1onload="document.getElementById('divRetirementYear').scrollIntoView();">
+    <button style="width:100%" class="btn btn-info" onclick="localStorage.clear();window.location.reload()">Data saved
+        to your browser automatically, click here to Reset</button>
     <div id="app" class="container">
-        <h3>Retirement calculator</h3>
-        <hr />
-        <div class="row">
-            <div class="col-4">
-                <label for="txtAge">Age:</label>
-                <input id="txtAge" class="form-control" v-model="data.person.age" step="1" type="number"
-                    @change="calculate" />
+        <div>
+            <h3>Retirement calculator</h3>
+            <hr />
+            <div class="accordion" id="accordionPanelsStayOpenExample">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true"
+                            aria-controls="panelsStayOpen-collapseOne">
+                            Age
+                        </button>
+                    </h2>
+                    <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-4">
+                                    <label for="txtAge">Age:</label>
+                                    <input id="txtAge" class="form-control" v-model="data.person.age" step="1"
+                                        type="number" @change="calculate" max="100" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="txtRetireAge">Retirement Age:</label>
+                                    <input id="data.person.retirement.age" class="form-control"
+                                        v-model="data.person.retirement.age" step="1" type="number"
+                                        @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="txtYears">Retire in years:</label>
+                                    <input id="txtYears" class="form-control"
+                                        :value="this.data.person.retirement.age - this.data.person.age" type="number"
+                                        disabled />
+                                </div>
+                                <div class="col-4">
+                                    <label for="person.dieAtAge">Life expandency age:</label>
+                                    <input id="person.dieAtAge" class="form-control" v-model="data.person.dieAtAge"
+                                        type="number" @change="calculate" max="100" />
+                                </div>
+                                <div class="col-4">Required Minimum Distribution Age<label for="rmd.age">:</label>
+                                    <input id="rmd.age" class="form-control" v-model="data.rmd.age" type="number"
+                                        disabled />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false"
+                            aria-controls="panelsStayOpen-collapseTwo">
+                            Income & Savings
+                        </button>
+                    </h2>
+                    <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse_z">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-4">
+                                    <label for="txtPretaxAmount">Current Tax Deferred Savings:
+                                        {{toDollar(data.person.pretaxAmount)}}</label>
+                                    <input id="txtPretaxAmount" class="form-control" v-model="data.person.pretaxAmount"
+                                        step="100" type="number" @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="data.person.salary">Current Salary:
+                                        {{toDollar(data.person.salary)}}</label>
+                                    <input id="data.person.salary" class="form-control" v-model="data.person.salary"
+                                        type="number" min="0" step="1000" @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="data.meritIncrease">Merit Increase:
+                                        {{toPercent(data.meritIncrease)}}</label>
+                                    <input id="data.meritIncrease" class="form-control" v-model="data.meritIncrease"
+                                        type="number" min="1" step="0.1" @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="annualReturn.beforeRetirement">Annual Return Before Retirement:
+                                        {{toPercent(data.annualReturn.beforeRetirement)}}</label>
+                                    <input id="annualReturn.beforeRetirement" class="form-control"
+                                        v-model="data.annualReturn.beforeRetirement" type="number" min="1" step="0.1"
+                                        @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="annualReturn.afterRetirement">Annual Return After Retirement:
+                                        {{toPercent(data.annualReturn.afterRetirement)}}</label>
+                                    <input id="annualReturn.afterRetirement" class="form-control"
+                                        v-model="data.annualReturn.afterRetirement" type="number" min="1" step="0.1"
+                                        @change="calculate" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#panelsStayOpen-collapse4" aria-expanded="true"
+                            aria-controls="panelsStayOpen-collapse4">
+                            Distributions / Roth Conversions
+                        </button>
+                    </h2>
+                    <div id="panelsStayOpen-collapse4" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-4">
+                                    <label for="distribution.age">Age to start Roth Conversion
+                                        {{data.distribution.age}}</label>
+                                    <input id="distribution.age" class="form-control" v-model="data.distribution.age"
+                                        type="number" min="40" step="1" @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="distribution.amount">Amount To Convert Each Year
+                                        {{toDollar(data.distribution.amount)}}</label>
+                                    <input id="distribution.amount" class="form-control"
+                                        v-model="data.distribution.amount" type="number" min="0" step="1000"
+                                        @change="calculate" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="true"
+                            aria-controls="panelsStayOpen-collapseThree">
+                            Summary & Insights
+                        </button>
+                    </h2>
+                    <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            <div>
+                                <h5>Retirement</h5>
+                                You are <b>{{data.person.age}}</b> years old,
+                                you are planning to retire in <b>{{data.person.retirement.age-data.person.age}}</b>
+                                years in
+                                <b>{{data.person.retirement.year}}</b> at the age of
+                                <b>{{data.person.retirement.age}}</b>. Your life expectancy age is
+                                <b>{{data.person.dieAtAge}}</b>.
+                                Your total number of years in retirement is
+                                <b>{{data.person.dieAtAge-data.person.retirement.age}}</b>.
+                                <br />
+                            </div>
+                            <div id="divSalary">
+                                <h5>Salary and 401K</h5>
+                                Your current household earned income is <b>{{toDollar(data.person.salary)}}</b>, you
+                                expect annual
+                                merit
+                                increase of <b>{{toPercent(data.meritIncrease)}}</b>.
+                                <br />
+                                Your current tax deferred retirement accounts
+                                have<b>{{toDollar(data.person.pretaxAmount)}}</b>
+                                total, you are contributing
+                                <b>{{toPercent(data.contrib.employeePercent)}}</b> of your
+                                salary to 401k, and your employer contributes
+                                <b>{{toPercent(data.contrib.employerPercent)}}</b> of
+                                your
+                                <b>{{toPercent(data.contrib.employeePercent)}}</b> contribution, total
+                                contribution is <b>{{toPercent(data.contrib.total)}}</b> of your
+                                salary each year. Your current year 401k contribution calculates to be
+                                <b>{{toDollar(data.person.salary*data.contrib.total/100)}}</b>.
+                            </div>
+                            <div id="divRetirementYear">
+                                <h5>Retirement Year <b>{{data.person.retirement.year}}</b> (age
+                                    <b>{{data.person.retirement.age}}</b>)
+                                </h5>
+                                With <b>{{toPercent(data.annualReturn.beforeRetirement)}}</b> annual return rate, and
+                                <b>{{toPercent(data.contrib.total)}}</b>
+                                total yearly
+                                contribution from employment,
+                                when you retire, you'll have <b>{{toDollar(data.person.retirement.pretaxAmount)}}</b> in
+                                your tax
+                                deferred accounts.
+                                <br />
+                                And with <b>{{toPercent(data.meritIncrease)}}</b> annual merit increase, your salary at
+                                retirement age
+                                is
+                                <b>{{toDollar(data.person.retirement.salary)}}</b>.
+                            </div>
+
+                            <div>
+                                <h5>Required Minimum Distribution <b>{{data.rmd.year}}</b> (age <b>{{data.rmd.age}}</b>)
+                                </h5>
+                                When you reach the age of <b>{{data.rmd.age}}</b>, you'll be required to take "Required
+                                Minimum
+                                Distribution"
+                                from your tax deferred accounts.
+                                <br />
+                                With the Roth conversion you stated, at <b>{{data.rmd.age}}</b>, your tax
+                                deferred accounts will grow to
+                                <b>{{toDollar(data.rmd.pretaxAmount)}}</b>,
+                                you'll be required to take out <b>_{{toDollar(data.rmd.pretaxAmount)}}_</b> / 27.4 =
+                                <b>{{toDollar(data.rmd.rmd)}}</b> on first year and increases every year after, it'll be
+                                subject to higher tax bracket
+                                of <b>___</b>%.
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-4">
-                <label for="txtRetireAge">Retirement Age:</label>
-                <input id="data.person.retirementAge" class="form-control" v-model="data.person.retirementAge" step="1"
-                    type="number" @change="calculate" />
-            </div>
-            <div class="col-4">
-                <label for="txtYears">Retire in years:</label>
-                <input id="txtYears" class="form-control" v-model="data.person.retireInYears" type="number" disabled />
-            </div>
-            <div class="col-4">
-                <label for="txtPretaxAmount">Current Tax Deferred Savings:
-                    {{toDollar(data.person.pretaxAmount)}}</label>
-                <input id="txtPretaxAmount" class="form-control" v-model="data.person.pretaxAmount" step="100"
-                    type="number" @change="calculate" />
-            </div>
-            <div class="col-4">
-                <label for="data.person.salary">Current Salary: {{toDollar(data.person.salary)}}</label>
-                <input id="data.person.salary" class="form-control" v-model="data.person.salary" type="number" min="0"
-                    step="1000" @change="calculate" />
-            </div>
-            <div class="col-4">
-                <label for="data.meritIncrease">Merit Increase: {{toPercent(data.meritIncrease)}}</label>
-                <input id="data.meritIncrease" class="form-control" v-model="data.meritIncrease" type="number" min="1"
-                    step="0.1" @change="calculate" />
-            </div>
-            <div class="col-4">
-                <label for="txtRate">Annual Return: {{toPercent(data.rate)}}</label>
-                <input id="txtRate" class="form-control" v-model="data.rate" type="number" min="1" step="0.1"
-                    @change="calculate" />
-            </div>
+
+
+            <hr />
         </div>
 
-        <hr />
-        <p>
-        <h5>Retirement</h5>
-        <div style="ddisplay:none">
-            You are <b>{{data.person.age}}</b> years old, your current tax deferred retirement accounts have
-            <b>{{toDollar(data.person.pretaxAmount)}}</b> total,
-            you are planning to retire in <b>{{data.person.retirementAge-data.person.age}}</b> years in
-            <b>{{data.person.retirementYear}}</b> at the age of
-            <b>{{data.person.retirementAge}}</b>. Your life expectancy age is <b>{{data.person.dieAtAge}}</b>.
-            <br />
-            </p>
-            <h5>Salary and 401K</h5>
-            Your household salary is <b>{{toDollar(data.person.salary)}}</b>, you are contributing
-            <b>{{toPercent(data.contrib.employeePercent)}}</b> percent of your
-            salary to 401k, and your employer contributes <b>{{toPercent(data.contrib.employerPercent)}}</b> of your
-            <b>{{toPercent(data.contrib.employeePercent)}}</b> contribution, total
-            contribution is <b>{{toPercent(data.contrib.total)}}</b> of your
-            salary each year. You expect annual merit increase of <b>{{toPercent(data.meritIncrease)}}</b>, at your
-            retirement age,
-            your salary would be <b>{{toDollar(data.person.retirementAgeSalary)}}</b>.
-            <br />
-            Based on <b>{{toPercent(data.rate)}}</b> annual return rate, and <b>{{toPercent(data.contrib.total)}}</b>
-            yearly
-            contribution from employment,
-            when you retire, you'll have <b>{{toDollar(data.result)}}</b> in your tax deferred accounts.
-            <br />
-            When you reach age <b>{{data.rmd.age}}</b>, you'll be required to take "Required Minimum Distribution" from
-            your
-            tax
-            deferred accounts.
-            <br />
-            Assuming that you don't take any money until you are <b>{{data.rmd.age}}</b>, your tax deferred accounts
-            will
-            grow to
-            <b>{{toDollar(data.rmd.startAmount)}}</b>,
-            you'll be required to take out <b>_{{toDollar(data.rmd.startAmount)}}_</b> / ~28 =
-            <b>{{toDollar(data.rmd.startAmount
-                / 28)}}</b> each year, it'll be subject to higher tax bracket of <b>___</b>%.
-
-        </div>
-        <table class="table table-strip table-hover">
+        <table class="table table-strip table-hover mt-5">
             <thead>
                 <th>Age</th>
-                <th>Tax deferred $$$</th>
                 <th>Year</th>
+                <th>Tax deferred $$$</th>
                 <th>Salary</th>
                 <th>401k Contrib ({{toPercent(data.contrib.total)}})</th>
                 <th>RMD</th>
+                <th>Distribution</th>
             </thead>
             <tbody>
-                <tr v-for="yearly in data.yearlyTable"
-                    :class="{retirementAge:yearly.age==data.person.retirementAge, rmdAge:yearly.age ==data.rmd.age}">
+                <tr v-for="yearly in data.yearlyData"
+                    :class="{retirementAge:yearly.age==data.person.retirement.age, rmdAge:yearly.age ==data.rmd.age}">
                     <td>{{yearly.age}}</td>
-                    <td>{{toDollar(yearly.pretaxAmount)}}</td>
                     <td>{{yearly.year}}</td>
+                    <td>{{toDollar(yearly.pretaxAmount)}}</td>
                     <td>{{toDollar(yearly.salary)}}</td>
                     <td>{{toDollar(yearly.k401)}}</td>
                     <td>{{toDollar(yearly.rmd)}}</td>
+                    <td>{{toDollar(yearly.dist)}}</td>
                 </tr>
             </tbody>
         </table>
@@ -158,17 +294,32 @@
             let savedData = JSON.parse(localStorage.getItem("data"));
             if (savedData) return { data: savedData };
 
+            // https://www.irs.gov/publications/p590b#en_US_2021_publink100090093
+            const uniformLifetimeTable = [
+                [72, 27.4], [73, 26.5], [74, 25.5], [75, 24.6], [76, 23.7], [77, 22.9], [78, 22], [79, 21.1], [80, 20.2], [81, 19.4], [82, 18.5],
+                [83, 17.7], [84, 16.8], [85, 16], [86, 15.2], [87, 14.4], [88, 13.7], [89, 12.9], [90, 12.2], [91, 11.5], [92, 10.8],
+                [93, 10.1], [94, 9.5], [95, 8.9], [96, 8.4], [97, 7.8], [98, 7.3], [99, 6.8], [100, 6.4]
+            ];
             return {
                 data: {
                     result: 0,
-                    yearlyTable: [],
-                    rate: 7,
+                    yearlyData: [],
+                    annualReturn: { beforeRetirement: 12, afterRetirement: 7 },
+                    distribution: { age: 55, amount: 200000 },
                     inflation: 3.0,
                     meritIncrease: 2,
-                    rmd: { age: 72, startAmount: 0 },
+                    rmd: { age: 72, pretaxAmount: 0, year: 0, lifetimeTable: uniformLifetimeTable },
                     distrib: { age: 56 },
                     contrib: { employeePercent: 6, employerPercent: 50, total: 9 },
-                    person: { age: 50, retirementAge: 55, pretaxAmount: 1000000, salary: 200000, dieAtAge: 90 }
+                    person: {
+                        age: 50, pretaxAmount: 1000000, salary: 200000, dieAtAge: 99,
+                        retirement: {
+                            age: 55,
+                            year: 0,
+                            salary: 0,
+                            pretaxAmount: 0
+                        }
+                    }
                 }
             }
         },
@@ -177,11 +328,13 @@
             calculate() {
                 this.calculateYearly();
 
-                this.data.person.retireInYears = this.data.person.retirementAge - this.data.person.age;
-                this.data.person.retirementYear = this.data.person.retireInYears + (new Date()).getFullYear();
                 this.data.contrib.total = this.data.contrib.employeePercent * (1 + this.data.contrib.employerPercent / 100);
-                this.data.rmd.startAmount = this.calculateCompound(this.data.result, this.data.rate, this.data.rmd.age - this.data.person.retirementAge);
-                this.data.person.retirementAgeSalary = this.calculateCompound(this.data.person.salary, 1 + this.data.meritIncrease / 100, this.data.person.retireInYears);
+
+                const rmdYearData = this.data.yearlyData.find(x => x.age === this.data.rmd.age);
+                this.data.rmd = { ...this.data.rmd, ...rmdYearData };
+
+                const retirementYearData = this.data.yearlyData.find(y => y.age === this.data.person.retirement.age);
+                this.data.person.retirement = { ...this.data.person.retirement, ...retirementYearData };
 
                 localStorage.setItem("data", JSON.stringify(this.data));
             },
@@ -192,52 +345,61 @@
                 return val;
             },
             calculateYearly() {
-                this.data.yearlyTable = [];
+                this.data.yearlyData = [];
                 let age = this.data.person.age;
                 let year = (new Date()).getFullYear();
-                let salary = this.data.person.salary;
-                let k401 = salary * (this.data.contrib.total) / 100;
-                let pretaxAmount = this.data.person.pretaxAmount + k401;
+                let salary = age <= this.data.person.retirement.age ? this.data.person.salary : 0;
+                let k401 = age <= this.data.person.retirement.age ? salary * (this.data.contrib.total) / 100 : 0;
                 let rmd = 0;
-                let yearly = {
+                let dist = age >= this.data.distribution.age ? this.data.distribution.amount : 0;
+                let pretaxAmount = this.data.person.pretaxAmount + k401 - dist;
+
+                const yearly = {
                     age: age,
-                    pretaxAmount: pretaxAmount,
                     year: year,
+                    pretaxAmount: pretaxAmount,
                     salary: salary,
                     k401: k401,
-                    rmd: rmd
+                    rmd: rmd,
+                    dist: dist
                 };
-                this.data.yearlyTable.push(yearly);
+                this.data.yearlyData.push(yearly);
 
                 for (let i = 0; i < this.data.person.dieAtAge - this.data.person.age; i++) {
                     age++;
                     year++;
+                    pretaxAmount = pretaxAmount + k401 - dist;
                     //before retirement
-                    if (age <= this.data.person.retirementAge) {
+                    if (age <= this.data.person.retirement.age) {
                         salary = salary * (1 + this.data.meritIncrease / 100);
+                        pretaxAmount = pretaxAmount * (1 + this.data.annualReturn.beforeRetirement / 100);
                     }
                     else {
                         salary = 0;
+                        pretaxAmount = pretaxAmount * (1 + this.data.annualReturn.afterRetirement / 100);
                     }
-                    k401 = salary * (this.data.contrib.total) / 100;
-                    pretaxAmount = pretaxAmount * (1 + this.data.rate / 100) + k401;
 
-                    //rmd age 72
+                    k401 = salary * (this.data.contrib.total) / 100;
+
+                    //rmd age 72+
                     if (age >= this.data.rmd.age) {
-                        rmd = pretaxAmount / (this.data.person.dieAtAge - this.data.rmd.age);
+                        rmd = pretaxAmount / (this.data.rmd.lifetimeTable.find(x => x[0] === age)[1]);
                     }
+                    dist = age < this.data.distribution.age ? 0 :
+                        (pretaxAmount < this.data.distribution.amount ? pretaxAmount : this.data.distribution.amount);
+                    dist = rmd > dist ? rmd : dist;
                     let yearly = {
                         age: age,
                         pretaxAmount: pretaxAmount,
                         year: year,
                         salary: salary,
                         k401: k401,
-                        rmd: rmd
+                        rmd: rmd,
+                        dist: dist
                     };
-                    this.data.yearlyTable.push(yearly);
+                    this.data.yearlyData.push(yearly);
                 }
-                this.data.result = pretaxAmount;
-                console.table(this.data.yearlyTable);
+                console.table(this.data.yearlyData);
             },
             // Util functions
             toDollar(val) {
@@ -251,10 +413,7 @@
                     style: "percent",
                     maximumFractionDigits: 1,
                 }).format(val / 100);
-            },
-
-
-
+            }
         },
         beforeMount() {
 
