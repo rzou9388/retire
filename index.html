@@ -134,14 +134,14 @@
                                     <label for="annualReturn.beforeRetirement">Annual Return Before Retirement:
                                         {{toPercent(data.annualReturn.beforeRetirement)}}</label>
                                     <input id="annualReturn.beforeRetirement" class="form-control"
-                                        v-model="data.annualReturn.beforeRetirement" type="number" min="1" step="0.1"
+                                        v-model="data.annualReturn.beforeRetirement" type="number" min="1" step="1"
                                         @change="calculate" />
                                 </div>
                                 <div class="col-4">
                                     <label for="annualReturn.afterRetirement">Annual Return After Retirement:
                                         {{toPercent(data.annualReturn.afterRetirement)}}</label>
                                     <input id="annualReturn.afterRetirement" class="form-control"
-                                        v-model="data.annualReturn.afterRetirement" type="number" min="1" step="0.1"
+                                        v-model="data.annualReturn.afterRetirement" type="number" min="1" step="1"
                                         @change="calculate" />
                                 </div>
                             </div>
@@ -190,9 +190,11 @@
                                 <h5>Retirement</h5>
                                 You are <b>{{data.person.age}}</b> years old,
                                 you are planning to retire in <b>{{data.person.retirement.age-data.person.age}}</b>
-                                years in
-                                <b>{{data.person.retirement.year}}</b> at the age of
-                                <b>{{data.person.retirement.age}}</b>. Your life expectancy age is
+                                years in <b>{{data.person.retirement.year}}</b> at the age of
+                                <b>{{data.person.retirement.age}}</b>.
+                                You will start receiving your Social Security retirement benefits from age 62.
+                                Your medicare will kick in when you are 65,
+                                Your life expectancy age is
                                 <b>{{data.person.dieAtAge}}</b>.
                                 Your total number of years in retirement is
                                 <b>{{data.person.dieAtAge-data.person.retirement.age}}</b>.
@@ -268,7 +270,8 @@
                 <th>Salary</th>
                 <th>401k Contrib ({{toPercent(data.contrib.total)}})</th>
                 <th>RMD</th>
-                <th>Distribution</th>
+                <th>Roth Conversion</th>
+                <th>Tax</th>
             </thead>
             <tbody>
                 <tr v-for="yearly in data.yearlyData"
@@ -280,10 +283,15 @@
                     <td>{{toDollar(yearly.k401)}}</td>
                     <td>{{toDollar(yearly.rmd)}}</td>
                     <td>{{toDollar(yearly.dist)}}</td>
+                    <td><span
+                            :title="JSON.stringify(getTaxBracketsForYear(yearly.year))">{{toDollar(yearly.tax)}}</span>
+                    </td>
                 </tr>
             </tbody>
         </table>
     </div>
+
+
 </body>
 
 <script type="module">
@@ -305,7 +313,7 @@
                     result: 0,
                     yearlyData: [],
                     annualReturn: { beforeRetirement: 12, afterRetirement: 7 },
-                    distribution: { age: 55, amount: 200000 },
+                    distribution: { age: 56, amount: 200000 },
                     inflation: 3.0,
                     meritIncrease: 2,
                     rmd: { age: 72, pretaxAmount: 0, year: 0, lifetimeTable: uniformLifetimeTable },
@@ -361,7 +369,8 @@
                     salary: salary,
                     k401: k401,
                     rmd: rmd,
-                    dist: dist
+                    dist: dist,
+                    tax: this.calculateEarnedIncomeTaxForYear(dist + salary - k401, year)
                 };
                 this.data.yearlyData.push(yearly);
 
@@ -395,7 +404,8 @@
                         salary: salary,
                         k401: k401,
                         rmd: rmd,
-                        dist: dist
+                        dist: dist,
+                        tax: this.calculateEarnedIncomeTaxForYear(dist + salary - k401, year)
                     };
                     this.data.yearlyData.push(yearly);
                 }
@@ -413,11 +423,87 @@
                     style: "percent",
                     maximumFractionDigits: 1,
                 }).format(val / 100);
+            },
+            getTaxBracketsForYear(year) {
+                if (window.brackets) {
+                    return window.brackets.find(x => x.year === year).data;
+                }
+
+                // historical yearly bracket increase around 1.5%
+                const r = 0.015;
+
+                const b2017 = {
+                    year: 2017,
+                    data: [
+                        { percent: 15, income: 18650 },
+                        { percent: 25, income: 75900 },
+                        { percent: 28, income: 153100 },
+                        { percent: 33, income: 233350 },
+                        { percent: 35, income: 416700 },
+                        { percent: 39.6, income: 470700 }
+                    ]
+                }
+                window.brackets = [b2017];
+                for (let i = 2017; i < 2017 + this.data.person.dieAtAge; i++) {
+                    const newdata = window.brackets[window.brackets.length - 1].data.map(
+                        x => { return { percent: x.percent, income: Math.round(x.income * (1 + r)) } }
+                    );
+                    window.brackets.push({
+                        year: i,
+                        data: newdata
+                    })
+                }
+
+                const b2024Data = [
+                    { percent: 12, income: 23200 },
+                    { percent: 22, income: 94300 },
+                    { percent: 24, income: 201050 },
+                    { percent: 32, income: 383900 },
+                    { percent: 35, income: 487450 },
+                    { percent: 37, income: 731200 }
+                ];
+                window.brackets.find(x => x.year === 2024).data = b2024Data;
+                const b2025Data = b2024Data.map(x => { return { percent: x.percent, income: Math.round(x.income * (1 + r)) } });
+                window.brackets.find(x => x.year === 2025).data = b2025Data;
+                return window.brackets.find(x => x.year === year).data;
+            },
+            calculateEarnedIncomeTaxForYear(income, year) {
+                const brackets = this.getTaxBracketsForYear(year);
+                console.log(year, JSON.stringify(brackets));
+                let sum = 0;
+                for (let i = 0; i < brackets.length; i++) {
+                    const bracket = brackets[i];
+                    console.log(bracket);
+                    if (income > bracket.income) {
+                        let tax = bracket.percent / 100 * bracket.income;
+                        sum += tax;
+                        income = income - bracket.income;
+                    } else {
+                        let tax = bracket.percent / 100 * income;
+                        sum += tax;
+                        return sum;
+                    }
+                }
             }
         },
         beforeMount() {
-
             this.calculate();
         }
     }).mount("#app");
 </script>
+
+<details>
+    <summary>TODOs</summary>
+    <ol>
+        <li>tax bracket based conversion</li>
+        <li>calculate when to receive SS</li>
+        <li>calculate medicare</li>
+        <li>spouse</li>
+        <li>before and after retirement expenses, without and with medicare</li>
+        <li>tax brakets and rates</li>
+        <li>today's currency view</li>
+        <li>one-off expenses</li>
+        <li>non-retirement incomes</li>
+        <li>roth accounts</li>
+    </ol>
+</details>
