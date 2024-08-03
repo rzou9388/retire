@@ -31,7 +31,10 @@
             margin-bottom: 30px;
         }
 
-        tr.retirementAge td {
+        tr.retirementAge td,
+        .ssAge td,
+        .medicareAge td,
+        .noPenalityAge td {
             font-weight: bold;
         }
 
@@ -53,7 +56,8 @@
 </head>
 
 <body 1onload="document.getElementById('divRetirementYear').scrollIntoView();">
-    <button style="width:100%" class="btn btn-info" onclick="localStorage.clear();window.location.reload()">Data saved
+    <button id="btnReset" style="width:100%" class="btn btn-info"
+        onclick="localStorage.clear();window.location.reload()">Data saved
         to your browser automatically, click here to Reset</button>
     <div id="app" class="container">
         <div>
@@ -72,30 +76,45 @@
                         <div class="accordion-body">
                             <div class="row">
                                 <div class="col-4">
-                                    <label for="txtAge">Age:</label>
+                                    <label for="txtAge">Current Age:</label>
                                     <input id="txtAge" class="form-control" v-model="data.person.age" step="1"
                                         type="number" @change="calculate" max="100" />
                                 </div>
                                 <div class="col-4">
-                                    <label for="txtRetireAge">Retirement Age:</label>
+                                    <label for="data.person.retirement.age">Retirement Age:</label>
                                     <input id="data.person.retirement.age" class="form-control"
                                         v-model="data.person.retirement.age" step="1" type="number"
                                         @change="calculate" />
                                 </div>
                                 <div class="col-4">
-                                    <label for="txtYears">Retire in years:</label>
+                                    <label for="txtYears">Retire In Years:</label>
                                     <input id="txtYears" class="form-control"
                                         :value="this.data.person.retirement.age - this.data.person.age" type="number"
                                         disabled />
                                 </div>
                                 <div class="col-4">
-                                    <label for="person.dieAtAge">Life expandency age:</label>
-                                    <input id="person.dieAtAge" class="form-control" v-model="data.person.dieAtAge"
-                                        type="number" @change="calculate" max="100" />
+                                    <label for="distribution.noPenalityAge">IRA no-penality withdraw age 59.5:</label>
+                                    <input id="distribution.noPenalityAge" class="form-control"
+                                        :value="data.distribution.noPenalityAge" type="number" disabled />
+                                </div>
+                                <div class="col-4">
+                                    <label for="data.medicare.age">Medicare Age:</label>
+                                    <input id="data.medicare.age" class="form-control" :value="data.medicare.age"
+                                        type="number" disabled />
                                 </div>
                                 <div class="col-4">Required Minimum Distribution Age<label for="rmd.age">:</label>
                                     <input id="rmd.age" class="form-control" v-model="data.rmd.age" type="number"
                                         disabled />
+                                </div>
+                                <div class="col-4">
+                                    <label for="person.ss.age">Social Security Benefit Age (62-67):</label>
+                                    <input id="person.ss.age" class="form-control" v-model="data.person.ss.age"
+                                        type="number" @change="calculate" min="62" max="67" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="person.dieAtAge">Life Expectancy (Age):</label>
+                                    <input id="person.dieAtAge" class="form-control" v-model="data.person.dieAtAge"
+                                        type="number" @change="calculate" max="100" />
                                 </div>
                             </div>
                         </div>
@@ -103,13 +122,14 @@
                 </div>
                 <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        <button class="accordion-button " type="button" data-bs-toggle="collapse"
                             data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false"
                             aria-controls="panelsStayOpen-collapseTwo">
                             Income & Savings
                         </button>
                     </h2>
-                    <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse_z">
+
+                    <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show">
                         <div class="accordion-body">
                             <div class="row">
                                 <div class="col-4">
@@ -144,10 +164,25 @@
                                         v-model="data.annualReturn.afterRetirement" type="number" min="1" step="1"
                                         @change="calculate" />
                                 </div>
+                                <div class="col-4">
+                                    <label for="contrib.employeePercent">Employee 401k Contribution:
+                                        {{toPercent(data.contrib.employeePercent)}}</label>
+                                    <input id="contrib.employeePercent" class="form-control"
+                                        v-model="data.contrib.employeePercent" type="number" min="1" step="1"
+                                        @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="contrib.employerPercent">Employer 401k Contribution:
+                                        {{toPercent(data.contrib.employerPercent)}}</label>
+                                    <input id="contrib.employerPercent" class="form-control"
+                                        v-model="data.contrib.employerPercent" type="number" min="1" step="1"
+                                        @change="calculate" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
                 <div class="accordion-item">
                     <h2 class="accordion-header">
                         <button class="accordion-button" type="button" data-bs-toggle="collapse"
@@ -161,16 +196,22 @@
                             <div class="row">
                                 <div class="col-4">
                                     <label for="distribution.age">Age to start Roth Conversion
-                                        {{data.distribution.age}}</label>
+                                    </label>
                                     <input id="distribution.age" class="form-control" v-model="data.distribution.age"
                                         type="number" min="40" step="1" @change="calculate" />
                                 </div>
+
                                 <div class="col-4">
-                                    <label for="distribution.amount">Amount To Convert Each Year
-                                        {{toDollar(data.distribution.amount)}}</label>
-                                    <input id="distribution.amount" class="form-control"
-                                        v-model="data.distribution.amount" type="number" min="0" step="1000"
-                                        @change="calculate" />
+                                    <label for="distribution.amount"
+                                        title="Projected retirement age tax brackets shown">Conversion based on tax
+                                        bracket
+                                        {{toPercent(data.distribution.bracket)}}</label>
+                                    <select id="distribution.braket" @change="calculate" class="form-select"
+                                        v-model="data.distribution.bracket">
+                                        <option v-for="b in getTaxBracketsForYear(data.person.retirement.year)"
+                                            :value="b.percent">{{b.percent}}% -
+                                            {{toDollar(b.income)}}</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -256,42 +297,95 @@
                         </div>
                     </div>
                 </div>
+
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#panelsStayOpen-yearly" aria-expanded="true"
+                            aria-controls="panelsStayOpen-yearly">
+                            Yearly Data
+                        </button>
+                    </h2>
+                    <div id="panelsStayOpen-yearly" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            <table class="table table-strip table-hover mt-5">
+                                <thead>
+                                    <th>Age</th>
+                                    <th>Year</th>
+                                    <th>Tax deferred $$$</th>
+                                    <th>Salary</th>
+                                    <th>401k Contrib ({{toPercent(data.contrib.total)}})</th>
+                                    <th>RMD</th>
+                                    <th>Roth Conversion</th>
+                                    <th>Tax</th>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="yearly in data.yearlyData" :class="{
+                                            retirementAge:yearly.age===data.person.retirement.age,
+                                            rmdAge:yearly.age ===data.rmd.age,
+                                            medicareAge:yearly.age === data.medicare.age,
+                                            ssAge:yearly.age === data.person.ss.age,
+                                            noPenalityAge:yearly.age === data.distribution.noPenalityAge
+                                        }">
+                                        <td>{{yearly.age}}</td>
+                                        <td>{{yearly.year}}</td>
+                                        <td>{{toDollar(yearly.pretaxAmount)}}</td>
+                                        <td>{{toDollar(yearly.salary)}}</td>
+                                        <td>{{toDollar(yearly.k401)}}</td>
+                                        <td>{{toDollar(yearly.rmd)}}</td>
+                                        <td>{{toDollar(yearly.dist)}}</td>
+                                        <td><span
+                                                :title="JSON.stringify(getTaxBracketsForYear(yearly.year))">{{toDollar(yearly.tax)}}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#panelsStayOpen-taxbrackets" aria-expanded="true"
+                            aria-controls="panelsStayOpen-taxbrackets">
+                            Projected Tax Rates for Married Filing Jointly
+                        </button>
+                    </h2>
+                    <div id="panelsStayOpen-taxbrackets" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <table class="table table-hover table-strip">
+                                    <thead>
+                                        <tr>
+                                            <th>Year</th>
+                                            <th>Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="y in brackets.filter(x => x.year >= (new Date()).getFullYear())">
+                                            <td>{{y.year}}</td>
+                                            <td>
+                                                <table>
+                                                    <tr v-for="b in y.data">
+                                                        <td>{{toPercent(b.percent)}}</td>
+                                                        <td>{{toDollar(b.income)}}</td>
+                                                    </tr>
+                                                </table>
+
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-
-            <hr />
         </div>
-
-        <table class="table table-strip table-hover mt-5">
-            <thead>
-                <th>Age</th>
-                <th>Year</th>
-                <th>Tax deferred $$$</th>
-                <th>Salary</th>
-                <th>401k Contrib ({{toPercent(data.contrib.total)}})</th>
-                <th>RMD</th>
-                <th>Roth Conversion</th>
-                <th>Tax</th>
-            </thead>
-            <tbody>
-                <tr v-for="yearly in data.yearlyData"
-                    :class="{retirementAge:yearly.age==data.person.retirement.age, rmdAge:yearly.age ==data.rmd.age}">
-                    <td>{{yearly.age}}</td>
-                    <td>{{yearly.year}}</td>
-                    <td>{{toDollar(yearly.pretaxAmount)}}</td>
-                    <td>{{toDollar(yearly.salary)}}</td>
-                    <td>{{toDollar(yearly.k401)}}</td>
-                    <td>{{toDollar(yearly.rmd)}}</td>
-                    <td>{{toDollar(yearly.dist)}}</td>
-                    <td><span
-                            :title="JSON.stringify(getTaxBracketsForYear(yearly.year))">{{toDollar(yearly.tax)}}</span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
     </div>
-
-
 </body>
 
 <script type="module">
@@ -310,25 +404,26 @@
             ];
             return {
                 data: {
-                    result: 0,
                     yearlyData: [],
-                    annualReturn: { beforeRetirement: 12, afterRetirement: 7 },
-                    distribution: { age: 56, amount: 200000 },
+                    annualReturn: { beforeRetirement: 10, afterRetirement: 5 },
+                    distribution: { age: 56, amount: 0, bracket: 15, noPenalityAge: 60 },
                     inflation: 3.0,
                     meritIncrease: 2,
+                    medicare: { age: 65 },
                     rmd: { age: 72, pretaxAmount: 0, year: 0, lifetimeTable: uniformLifetimeTable },
-                    distrib: { age: 56 },
                     contrib: { employeePercent: 6, employerPercent: 50, total: 9 },
                     person: {
-                        age: 50, pretaxAmount: 1000000, salary: 200000, dieAtAge: 99,
+                        age: 50, pretaxAmount: 1000000, salary: 100000, dieAtAge: 90,
                         retirement: {
                             age: 55,
                             year: 0,
                             salary: 0,
                             pretaxAmount: 0
-                        }
+                        },
+                        ss: { age: 67 }
                     }
-                }
+                },
+                brackets: []
             }
         },
 
@@ -359,8 +454,9 @@
                 let salary = age <= this.data.person.retirement.age ? this.data.person.salary : 0;
                 let k401 = age <= this.data.person.retirement.age ? salary * (this.data.contrib.total) / 100 : 0;
                 let rmd = 0;
-                let dist = age >= this.data.distribution.age ? this.data.distribution.amount : 0;
-                let pretaxAmount = this.data.person.pretaxAmount + k401 - dist;
+                let pretaxAmount = this.data.person.pretaxAmount + k401;
+                let dist = age >= this.data.distribution.age ? this.data.distribution.bracket / 100 * pretaxAmount : 0;
+                pretaxAmount -= dist;
 
                 const yearly = {
                     age: age,
@@ -394,8 +490,9 @@
                     if (age >= this.data.rmd.age) {
                         rmd = pretaxAmount / (this.data.rmd.lifetimeTable.find(x => x[0] === age)[1]);
                     }
+                    const targetedDistAmount = this.getIncomeForBracketAndYear(year, this.data.distribution.bracket) - (salary - k401);
                     dist = age < this.data.distribution.age ? 0 :
-                        (pretaxAmount < this.data.distribution.amount ? pretaxAmount : this.data.distribution.amount);
+                        (pretaxAmount < targetedDistAmount ? pretaxAmount : targetedDistAmount);
                     dist = rmd > dist ? rmd : dist;
                     let yearly = {
                         age: age,
@@ -425,51 +522,76 @@
                 }).format(val / 100);
             },
             getTaxBracketsForYear(year) {
-                if (window.brackets) {
-                    return window.brackets.find(x => x.year === year).data;
+                try {
+                    if (this.brackets.length !== 0) {
+                        return this.brackets.find(x => x.year === year).data;
+                    }
+                } catch (ex) {
+                    console.error('year=', year, 'ex=', ex);
                 }
 
-                // historical yearly bracket increase around 1.5%
+                // historical yearly bracket increase around 1.5% in from 2007-2017
                 const r = 0.015;
 
+                // 2018 has diff tax bracket
                 const b2017 = {
                     year: 2017,
                     data: [
-                        { percent: 15, income: 18650 },
-                        { percent: 25, income: 75900 },
-                        { percent: 28, income: 153100 },
-                        { percent: 33, income: 233350 },
-                        { percent: 35, income: 416700 },
-                        { percent: 39.6, income: 470700 }
+                        { percent: 10, income: 18650 },
+                        { percent: 15, income: 75900 },
+                        { percent: 25, income: 153100 },
+                        { percent: 28, income: 233350 },
+                        { percent: 33, income: 416700 },
+                        { percent: 35, income: 470000 },
+                        { percent: 39.6, income: 1000000 }
                     ]
                 }
-                window.brackets = [b2017];
-                for (let i = 2017; i < 2017 + this.data.person.dieAtAge; i++) {
-                    const newdata = window.brackets[window.brackets.length - 1].data.map(
+                this.brackets = [b2017];
+                for (let i = 2018; i < 2018 + this.data.person.dieAtAge; i++) {
+                    const newdata = this.brackets[this.brackets.length - 1].data.map(
                         x => { return { percent: x.percent, income: Math.round(x.income * (1 + r)) } }
                     );
-                    window.brackets.push({
+                    this.brackets.push({
                         year: i,
                         data: newdata
                     })
                 }
 
+                // 2024-2025 = trump tax rate
                 const b2024Data = [
-                    { percent: 12, income: 23200 },
-                    { percent: 22, income: 94300 },
-                    { percent: 24, income: 201050 },
-                    { percent: 32, income: 383900 },
-                    { percent: 35, income: 487450 },
-                    { percent: 37, income: 731200 }
+                    { percent: 12, income: 89450 },
+                    { percent: 22, income: 190750 },
+                    { percent: 24, income: 364200 },
+                    { percent: 32, income: 462500 },
+                    { percent: 35, income: 693750 },
+                    { percent: 37, income: 1000000 }
                 ];
-                window.brackets.find(x => x.year === 2024).data = b2024Data;
+                this.brackets.find(x => x.year === 2024).data = b2024Data;
                 const b2025Data = b2024Data.map(x => { return { percent: x.percent, income: Math.round(x.income * (1 + r)) } });
-                window.brackets.find(x => x.year === 2025).data = b2025Data;
-                return window.brackets.find(x => x.year === year).data;
+                this.brackets.find(x => x.year === 2025).data = b2025Data;
+                return this.brackets.find(x => x.year === year).data;
+            },
+            /**
+             * returns ordinary income upper limit for given year and bracket
+             * if bracket is not found, go with the bracket lower
+             */
+            getIncomeForBracketAndYear(year, bracketRate) {
+                if (bracketRate === 0) return 0;    // not selected in dropdown
+
+                const brackets = this.getTaxBracketsForYear(year);
+                let bracket = brackets.find(x => x.percent === bracketRate);
+                if (bracket == null) {
+                    let i = 0;
+                    for (i = 0; i < brackets.length; i++) {
+                        if (brackets[i].percent > bracketRate)
+                            break;
+                    }
+                    bracket = brackets[i - 1];
+                }
+                return bracket.income;
             },
             calculateEarnedIncomeTaxForYear(income, year) {
                 const brackets = this.getTaxBracketsForYear(year);
-                console.log(year, JSON.stringify(brackets));
                 let sum = 0;
                 for (let i = 0; i < brackets.length; i++) {
                     const bracket = brackets[i];
@@ -487,7 +609,11 @@
             }
         },
         beforeMount() {
-            this.calculate();
+            try {
+                this.calculate();
+            } catch (ex) {
+                console.error(ex);
+            }
         }
     }).mount("#app");
 </script>
@@ -496,6 +622,8 @@
     <summary>TODOs</summary>
     <ol>
         <li>tax bracket based conversion</li>
+        <li>investment incomes</li>
+        <li>roth accounts</li>
         <li>calculate when to receive SS</li>
         <li>calculate medicare</li>
         <li>spouse</li>
@@ -503,7 +631,6 @@
         <li>tax brakets and rates</li>
         <li>today's currency view</li>
         <li>one-off expenses</li>
-        <li>non-retirement incomes</li>
-        <li>roth accounts</li>
+        <li>state tax input</li>
     </ol>
 </details>
