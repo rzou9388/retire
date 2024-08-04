@@ -43,6 +43,11 @@
             color: orange
         }
 
+        td.spending,
+        td.tax {
+            color: red
+        }
+
         h5,
         h3 {
             margin-top: 30px
@@ -116,6 +121,22 @@
                                     type="number" @change="calculate" max="100" />
                             </div>
                         </div>
+                        <div>
+                            <h5>Summary</h5>
+                            You are <b>{{data.person.age}}</b> years old,
+                            you are planning to retire in <b>{{data.person.retirement.age-data.person.age}}</b>
+                            years in <b>{{data.person.retirement.year}}</b> at the age of
+                            <b>{{data.person.retirement.age}}</b>.
+                            You will start receiving your Social Security retirement benefits from age
+                            <b>{{data.person.ss.age}}</b>.
+                            Your medicare will kick in when you are
+                            <b>{{data.medicare.age}}</b>;
+                            Your life expectancy age is
+                            <b>{{data.person.dieAtAge}}</b>.
+                            Your total number of years in retirement is
+                            <b>{{data.person.dieAtAge-data.person.retirement.age}}</b>.
+                            <br />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -132,19 +153,19 @@
                     <div class="accordion-body">
                         <div class="row">
                             <div class="col-4">
-                                <label for="txtPretaxAmount">Current Tax Deferred Savings:
+                                <label for="txtPretaxAmount">Current Traditional Retirement:
                                     {{toDollar(data.person.pretaxAmount)}}</label>
                                 <input id="txtPretaxAmount" class="form-control" v-model="data.person.pretaxAmount"
                                     step="100" type="number" @change="calculate" />
                             </div>
                             <div class="col-4">
-                                <label for="data.person.investment">After Tax Investment:
+                                <label for="data.person.investment">Current After Tax Investment:
                                     {{toDollar(data.person.investment)}}</label>
                                 <input id="data.person.investment" class="form-control" v-model="data.person.investment"
                                     type="number" min="1" step="1000" @change="calculate" />
                             </div>
                             <div class="col-4">
-                                <label for="data.person.roth">Roth:
+                                <label for="data.person.roth">Current Roth:
                                     {{toDollar(data.person.roth)}}</label>
                                 <input id="data.person.roth" class="form-control" v-model="data.person.roth"
                                     type="number" min="0" step="1000" @change="calculate" />
@@ -192,6 +213,56 @@
                                     @change="calculate" />
                             </div>
                         </div>
+                        <div id="divSalary">
+                            <h5>Summary</h5>
+                            Your current household earned income is <b>{{toDollar(data.person.salary)}}</b>, you
+                            expect annual
+                            merit
+                            increase of <b>{{toPercent(data.meritIncrease)}}</b>.
+                            <br />
+                            Your current tax deferred retirement accounts
+                            have<b>{{toDollar(data.person.pretaxAmount)}}</b>
+                            total, you are contributing
+                            <b>{{toPercent(data.contrib.employeePercent)}}</b> of your
+                            salary to 401k, and your employer contributes
+                            <b>{{toPercent(data.contrib.employerPercent)}}</b> of
+                            your
+                            <b>{{toPercent(data.contrib.employeePercent)}}</b> contribution, total
+                            contribution is <b>{{toPercent(data.contrib.total)}}</b> of your
+                            salary each year. Your current year 401k contribution calculates to be
+                            <b>{{toDollar(data.person.salary*data.contrib.total/100)}}</b>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#panelsStayOpen-spending" aria-expanded="true"
+                        aria-controls="panelsStayOpen-spending">
+                        Spending
+                    </button>
+                </h2>
+                <div id="panelsStayOpen-spending" class="accordion-collapse collapse show">
+                    <div class="accordion-body">
+                        <div class="row">
+                            <div class="col-4">
+                                <label for="data.spending.beforeRetirement">Yearly (Before Retirement)
+                                    {{toDollar(data.spending.beforeRetirement)}}
+                                </label>
+                                <input id="data.spending.beforeRetirement" class="form-control"
+                                    v-model="data.spending.beforeRetirement" type="number" step="10000"
+                                    @change="calculate" />
+                            </div>
+                            <div class="col-4">
+                                <label for="data.spending.afterRetirement">Yearly (After Retirement)
+                                    {{toDollar(data.spending.afterRetirement)}}
+                                </label>
+                                <input id="data.spending.afterRetirement" class="form-control"
+                                    v-model="data.spending.afterRetirement" type="number" step="10000"
+                                    @change="calculate" />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -201,7 +272,7 @@
                     <button class="accordion-button" type="button" data-bs-toggle="collapse"
                         data-bs-target="#panelsStayOpen-collapse4" aria-expanded="true"
                         aria-controls="panelsStayOpen-collapse4">
-                        Distributions / Roth Conversions
+                        Traditional Retirement Accounts Distributions / Roth Conversions
                     </button>
                 </h2>
                 <div id="panelsStayOpen-collapse4" class="accordion-collapse collapse show">
@@ -215,12 +286,12 @@
                             </div>
 
                             <div class="col-4">
-                                <label for="distribution.amount"
+                                <label for="distribution.braket"
                                     title="Projected retirement age tax brackets shown">Conversion based on tax
-                                    bracket
-                                    {{toPercent(data.distribution.bracket)}}</label>
+                                    bracket</label>
                                 <select id="distribution.braket" @change="calculate" class="form-select"
                                     v-model="data.distribution.bracket">
+                                    <option value="0">0%</option>
                                     <option v-for="b in getTaxBracketsForYear(data.person.retirement.year).data"
                                         :value="b.percent">{{b.percent}}% -
                                         {{toDollar(b.income)}}</option>
@@ -240,39 +311,7 @@
                 </h2>
                 <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show">
                     <div class="accordion-body">
-                        <div>
-                            <h5>Retirement</h5>
-                            You are <b>{{data.person.age}}</b> years old,
-                            you are planning to retire in <b>{{data.person.retirement.age-data.person.age}}</b>
-                            years in <b>{{data.person.retirement.year}}</b> at the age of
-                            <b>{{data.person.retirement.age}}</b>.
-                            You will start receiving your Social Security retirement benefits from age 62.
-                            Your medicare will kick in when you are 65,
-                            Your life expectancy age is
-                            <b>{{data.person.dieAtAge}}</b>.
-                            Your total number of years in retirement is
-                            <b>{{data.person.dieAtAge-data.person.retirement.age}}</b>.
-                            <br />
-                        </div>
-                        <div id="divSalary">
-                            <h5>Salary and 401K</h5>
-                            Your current household earned income is <b>{{toDollar(data.person.salary)}}</b>, you
-                            expect annual
-                            merit
-                            increase of <b>{{toPercent(data.meritIncrease)}}</b>.
-                            <br />
-                            Your current tax deferred retirement accounts
-                            have<b>{{toDollar(data.person.pretaxAmount)}}</b>
-                            total, you are contributing
-                            <b>{{toPercent(data.contrib.employeePercent)}}</b> of your
-                            salary to 401k, and your employer contributes
-                            <b>{{toPercent(data.contrib.employerPercent)}}</b> of
-                            your
-                            <b>{{toPercent(data.contrib.employeePercent)}}</b> contribution, total
-                            contribution is <b>{{toPercent(data.contrib.total)}}</b> of your
-                            salary each year. Your current year 401k contribution calculates to be
-                            <b>{{toDollar(data.person.salary*data.contrib.total/100)}}</b>.
-                        </div>
+
                         <div id="divRetirementYear">
                             <h5>Retirement Year <b>{{data.person.retirement.year}}</b> (age
                                 <b>{{data.person.retirement.age}}</b>)
@@ -328,10 +367,11 @@
                                 <th>Salary</th>
                                 <th>401k Contrib ({{toPercent(data.contrib.total)}})</th>
                                 <th>RMD</th>
+                                <th title="inflation adjusted">Spending</th>
                                 <th>Roth Conversion</th>
-                                <th>Tax Deferred</th>
+                                <th title="traditional 401k, IRA">Tax Deferred</th>
                                 <th>Roth</th>
-                                <th>Investment</th>
+                                <th title="brokerage + savings">Investment</th>
                                 <th>Tax</th>
                             </thead>
                             <tbody>
@@ -347,12 +387,13 @@
                                     <td>{{toDollar(yearly.salary)}}</td>
                                     <td>{{toDollar(yearly.k401)}}</td>
                                     <td>{{toDollar(yearly.rmd)}}</td>
+                                    <td class="spending">-{{toDollar(yearly.spending)}}</td>
                                     <td>{{toDollar(yearly.dist)}}</td>
                                     <td>{{toDollar(yearly.pretaxAmount)}}</td>
                                     <td>{{toDollar(yearly.roth)}}</td>
                                     <td>{{toDollar(yearly.investment)}}</td>
-                                    <td><span
-                                            :title="JSON.stringify(getTaxBracketsForYear(yearly.year).data)">{{toDollar(yearly.tax)}}</span>
+                                    <td class="tax"><span
+                                            :title="JSON.stringify(getTaxBracketsForYear(yearly.year).data)">-{{toDollar(yearly.tax)}}</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -421,6 +462,7 @@
             return {
                 data: {
                     yearlyData: [],
+                    spending: { beforeRetirement: 100000, afterRetirement: 80000 },
                     annualReturn: { beforeRetirement: 10, afterRetirement: 5 },
                     distribution: { age: 56, amount: 0, bracket: 15, noPenalityAge: 60 },
                     inflation: 3.0,
@@ -429,7 +471,7 @@
                     rmd: { age: 72, pretaxAmount: 0, year: 0, lifetimeTable: uniformLifetimeTable },
                     contrib: { employeePercent: 6, employerPercent: 50, total: 9 },
                     person: {
-                        age: 50, pretaxAmount: 1000000, salary: 100000, dieAtAge: 90,
+                        age: 50, pretaxAmount: 1000000, salary: 100000, dieAtAge: 88,
                         retirement: {
                             age: 55,
                             year: 0,
@@ -475,19 +517,24 @@
                 let salary = this.data.person.salary;
                 let investment = this.data.person.investment;
                 let roth = this.data.person.roth;
-                console.log(this.data.person.investment);
-                for (let i = 0; i < yearsToCalc; i++) {
+                let spending = { beforeRetirement: this.data.spending.beforeRetirement, afterRetirement: this.data.spending.afterRetirement };
+
+                for (let i = 0; i <= yearsToCalc; i++) {
+                    let spendingAmount = spending.afterRetirement;
                     //before retirement
                     if (age <= this.data.person.retirement.age) {
                         salary = i === 0 ? salary : salary * (1 + this.data.meritIncrease / 100);
                         pretaxAmount = i === 0 ? pretaxAmount : pretaxAmount * (1 + this.data.annualReturn.beforeRetirement / 100);
                         investment = i === 0 ? investment : investment * (1 + this.data.annualReturn.beforeRetirement / 100);
+                        investment = investment <= 0 ? 0 : investment;
                         roth = i === 0 ? roth : roth * (1 + this.data.annualReturn.beforeRetirement / 100);
+                        spendingAmount = spending.beforeRetirement;
                     }
                     else {
                         salary = 0;
                         pretaxAmount = i === 0 ? pretaxAmount : pretaxAmount * (1 + this.data.annualReturn.afterRetirement / 100);
                         investment = i === 0 ? investment : investment * (1 + this.data.annualReturn.afterRetirement / 100);
+                        investment = investment <= 0 ? 0 : investment;
                         roth = i === 0 ? roth : roth * (1 + this.data.annualReturn.beforeRetirement / 100);
                     }
 
@@ -526,7 +573,8 @@
                         dist: dist,
                         investment: investment,
                         roth: roth,
-                        tax: tax
+                        tax: tax,
+                        spending: spendingAmount
                     };
                     this.data.yearlyData.push(yearly);
                     age++;
@@ -535,10 +583,15 @@
                     if (age >= this.data.distribution.noPenalityAge) {
                         roth = roth - tax;
                     } else {
-                        investment = investment - tax;
+                        if (dist > 0) {
+                            investment = investment - tax;
+                        }
                     }
 
                     pretaxAmount = pretaxAmount + k401 - dist;
+                    spending.beforeRetirement = spending.beforeRetirement * (1 + this.data.inflation / 100);
+                    spending.afterRetirement = spending.afterRetirement * (1 + this.data.inflation / 100);
+                    investment += (taxableIncome - spendingAmount);
                 }
 
                 console.table(this.data.yearlyData);
@@ -619,7 +672,7 @@
              * if bracket is not found, go with the bracket lower
              */
             getIncomeForBracketAndYear(year, bracketRate) {
-                if (bracketRate === 0) return 0;    // not selected in dropdown
+                if (bracketRate === '0') return 0;    // not selected in dropdown
 
                 const brackets = this.getTaxBracketsForYear(year).data;
                 let bracket = brackets.find(x => x.percent === bracketRate);
@@ -665,8 +718,8 @@
 <details>
     <summary>TODOs</summary>
     <ol>
-        <li>investment incomes</li>
-        <li>roth accounts</li>
+        <li>spending from investment should add 15% tax </li>
+        <li>capital gain over 250k add 3.8%</li>
         <li>calculate when to receive SS</li>
         <li>calculate medicare</li>
         <li>custom % conversion</li>
