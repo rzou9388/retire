@@ -759,25 +759,20 @@
                         taxableIncome += dist;
                     }
 
-                    let tax = this.calculateEarnedIncomeTaxForYear(taxableIncome, year);
+                    let fica = this.calculateFica(salary, year);
+                    let standardDeduction = this.calculateStandardDeduction(year);
+                    let tax = this.calculateEarnedIncomeTaxForYear(taxableIncome - standardDeduction, year);
+                    tax += fica;
 
-                    // before retirement, spending money is from salary
-                    // after retirement
-                    // spending money will be paid from investment account sell first, which has 15% tax,
-                    // 3.8% medicare surtax on 250k above capital gain
-                    // investment account has no money, pay tax from roth, which has no tax
-                    if (age >= this.data.person.retirement.age && investment >= (tax + spendingAmount * 0.15)) {
-                        tax += spendingAmount * 0.15;
-                        tax += (taxableIncome + spendingAmount) * (this.data.tax.state.afterRetirement / 100);
-                        if (taxableIncome + spendingAmount > 250000) {
-                            tax += (taxableIncome + spendingAmount - 250000) * 0.038;
-                        }
-                    }
+                    tax += this.calculateCapitalGainTax();
 
                     // before retirement, state income tax
                     if (age < this.data.person.retirement.age && investment >= (tax + spendingAmount * 0.15)) {
                         tax += (taxableIncome) * (this.data.tax.state.beforeRetirement / 100);
+                    } else {
+                        tax += (taxableIncome + spendingAmount) * (this.data.tax.state.afterRetirement / 100);
                     }
+
 
                     let yearly = {
                         age: age,
@@ -825,7 +820,27 @@
 
                 console.table(this.data.yearlyData);
             },
+            calculateStandardDeduction(year) {
+                const tdata = this.getTaxBracketsForYear(year);
+                return tdata.standardDeduction;
 
+            },
+            calculateCapitalGainTax(age, tax, taxableIncome, spendingAmount) {
+                // before retirement, spending money is from salary
+                // after retirement
+                // spending money will be paid from investment account sell first, which has 15% tax,
+                // 3.8% medicare surtax on 250k above capital gain
+                // investment account has no money, pay tax from roth, which has no tax
+                let newTax = 0;
+                if (age >= this.data.person.retirement.age && investment >= (tax + spendingAmount * 0.15)) {
+                    newTax += spendingAmount * 0.15;  // 15% capital gain
+                    newTax += spendingAmount * (this.data.tax.state.afterRetirement / 100); // state tax
+                    if (taxableIncome + spendingAmount > 250000) {
+                        newTax += (taxableIncome + spendingAmount - 250000) * 0.038;
+                    }
+                }
+                return newTax;
+            },
 
             // Util functions
             toDollar(val) {
@@ -929,9 +944,40 @@
                     } else {
                         let tax = bracket.percent / 100 * income;
                         sum += tax;
+                        console.log('tax=', sum, year);
                         return sum;
                     }
                 }
+            },
+            calculateFica(salary, year) {
+                const ssRate = 0.062;
+                const medicareRate = 0.0145, medicareCeiling = 250000, medicareRateOverCeiling = 0.0235;
+                const ssTaxCeiling = this.getFica_SSTaxCeiling(year);
+                let fica = 0;
+                if (salary > ssTaxCeiling) {
+                    fica += ssTaxCeiling * ssRate;
+                } else {
+                    fica += salary * ssRate;
+                }
+
+                if (salary <= medicareCeiling) {
+                    fica += salary * medicareRate;
+                } else {
+                    fica += medicareCeiling * medicareRate;
+                    fica += (salary - medicareCeiling) * medicareRateOverCeiling;
+                }
+                console.log('fica=', fica, year);
+                return fica;
+            },
+            getFica_SSTaxCeiling(year) {
+                const ssrCeiling2024 = 168600;
+                const ssrCeilingInreaseRate = 0.045; // average from last 8 years
+
+                let sum = 168600;
+                for (let i = 0; i < year - 2024; i++) {
+                    sum = sum * (1 + ssrCeilingInreaseRate);
+                }
+                return sum;
             }
         },
         beforeMount() {
