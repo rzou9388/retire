@@ -68,7 +68,7 @@
     <button id="btnReset" style="width:100%" class="btn btn-info"
         onclick="localStorage.clear();window.location.reload()">Data saved
         to your browser automatically, click here to Reset</button>
-    <div id="app" class="container">
+    <div id="app" class="container-fluid">
 
         <h3>Retirement calculator</h3>
         <hr />
@@ -190,8 +190,8 @@
                                 <input id="data.meritIncrease" class="form-control" v-model="data.meritIncrease"
                                     type="number" min="1" step="0.1" @change="calculate" />
                             </div>
-
-
+                        </div>
+                        <div class="row">
                             <div class="col-4">
                                 <label for="contrib.employeePercent">Employee 401k Contribution:
                                     {{toPercent(data.contrib.employeePercent)}}</label>
@@ -200,10 +200,24 @@
                                     @change="calculate" />
                             </div>
                             <div class="col-4">
-                                <label for="contrib.employerPercent">Employer 401k Contribution:
+                                <label for="contrib.roth401kPercent">Employee <b>Roth</b> 401k Contribution:
+                                    {{toPercent(data.contrib.roth401kPercent)}}</label>
+                                <input id="contrib.roth401kPercent" class="form-control"
+                                    v-model="data.contrib.roth401kPercent" type="number" min="1" step="1"
+                                    @change="calculate" />
+                            </div>
+                            <div class="col-4">
+                                <label for="contrib.employerPercent">Employer 401k Match:
                                     {{toPercent(data.contrib.employerPercent)}}</label>
                                 <input id="contrib.employerPercent" class="form-control"
-                                    v-model="data.contrib.employerPercent" type="number" min="1" step="1"
+                                    v-model="data.contrib.employerPercent" type="number" min="0" step="1"
+                                    @change="calculate" />
+                            </div>
+                            <div class="col-4">
+                                <label for="contrib.employerMatchUpTo">Employer 401k Match Up To:
+                                    {{toPercent(data.contrib.employerMatchUpTo)}}</label>
+                                <input id="contrib.employerMatchUpTo" class="form-control"
+                                    v-model="data.contrib.employerMatchUpTo" type="number" min="0" max="10" step="1"
                                     @change="calculate" />
                             </div>
                             <div class="col-4">
@@ -234,11 +248,10 @@
                             <b>{{toPercent(data.contrib.employeePercent)}}</b> of your
                             salary to 401k, and your employer contributes
                             <b>{{toPercent(data.contrib.employerPercent)}}</b> of
-                            your
-                            <b>{{toPercent(data.contrib.employeePercent)}}</b> contribution, total
-                            contribution is <b>{{toPercent(data.contrib.total)}}</b> of your
+                            your salary, total
+                            contribution is <b>{{toPercent(data.contrib.totalPercent)}}</b> of your
                             salary each year. Your current year 401k contribution calculates to be
-                            <b>{{toDollar(data.person.salary*data.contrib.total/100)}}</b>.
+                            <b>{{toDollar(data.person.salary*data.contrib.totalPercent/100)}}</b>.
                         </div>
                     </div>
                 </div>
@@ -380,7 +393,7 @@
                                 you'll be required to withdraw <b>{{toDollar(data.rmd.pretaxBalance)}}</b> / 27.4 =
                                 <b>{{toDollar(data.rmd.rmd)}}</b> on first year and increases percentage wise every year
                                 after. Your tax bill on that first year distribution is around
-                                <b>{{toDollar(calculateEarnedIncomeTaxForYear(this.data.rmd.rmd,
+                                <b>{{toDollar(calculateOrdinaryIncomeTaxForYear(this.data.rmd.rmd,
                                     this.data.rmd.year))}}</b>.
                             </div>
                         </div>
@@ -424,11 +437,13 @@
                             <h5>Taxes</h5>
                             <div class="mt-3">
                                 <ul>
-                                    <li>Federal Ordinary Income Tax (see table below)</li>
+                                    <li>Federal Ordinary Income Tax (see table below) - with 1.7% increase in bracket
+                                        ceilings each year</li>
                                     <li>Federal Capital Gain Tax (15% for long term)</li>
-                                    <li>FICA (SS & Medicare)</li>
+                                    <li>FICA (SS & Medicare), and extra 0.9% for portion of salary income over $250,000;
+                                        no FICA on capital gains or roth conversion.</li>
                                     <li>Medicare Surtax 3.8% on Capital Gain for MAGI over $250,000</li>
-                                    <li>State Taxes </li>
+                                    <li>State Taxes allows different taxes for before and after retirement</li>
                                 </ul>
                             </div>
                         </div>
@@ -451,7 +466,7 @@
                                 <b>{{data.person.retirement.age}}</b>)
                             </h5>
                             With <b>{{toPercent(data.annualReturn.beforeRetirement)}}</b> annual return rate, and
-                            <b>{{toPercent(data.contrib.total)}}</b>
+                            <b>{{toPercent(data.contrib.totalPercent)}}</b>
                             total yearly
                             contribution from employment,
                             when you retire, you'll have <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in
@@ -496,7 +511,14 @@
                             <div class="form-check col">
                                 <input class="form-check-input" id="col-contrib" type="checkbox"
                                     v-model="data.columns.contrib" />
-                                <label class="form-check-label" for="col-contrib">401K Contrib</label>
+                                <label class="form-check-label" for="col-contrib">401K
+                                    Contrib {{toPercent(data.contrib.totalPercent)}}</label>
+                            </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-contribRoth" type="checkbox"
+                                    v-model="data.columns.contribRoth" />
+                                <label class="form-check-label" for="col-contribRoth">Roth 401K
+                                    {{toPercent(data.contrib.rothTotalPercent)}}</label>
                             </div>
                             <div class="form-check col">
                                 <input class="form-check-input" id="col-rmd" type="checkbox"
@@ -540,8 +562,8 @@
                                 <th v-if="data.columns.age">Age</th>
                                 <th v-if="data.columns.year">Year</th>
                                 <th v-if="data.columns.salary">Salary</th>
-                                <th v-if="data.columns.contrib">401k Contrib
-                                    ({{toPercent(data.contrib.total)}})</th>
+                                <th v-if="data.columns.contrib">401k Contrib</th>
+                                <th v-if="data.columns.contribRoth">Roth 401k</th>
                                 <th v-if="data.columns.rmd">RMD</th>
                                 <th v-if="data.columns.spending" title="inflation adjusted">Spending
                                 </th>
@@ -566,6 +588,7 @@
                                     <td v-if="data.columns.year">{{yearly.year}}</td>
                                     <td v-if="data.columns.salary">{{toDollar(yearly.salary)}}</td>
                                     <td v-if="data.columns.contrib">{{toDollar(yearly.k401)}}</td>
+                                    <td v-if="data.columns.contribRoth">{{toDollar(yearly.roth401k)}}</td>
                                     <td v-if="data.columns.rmd">{{toDollar(yearly.rmd)}}</td>
                                     <td v-if="data.columns.spending" class="spending">
                                         -{{toDollar(yearly.spending)}}</td>
@@ -596,6 +619,8 @@
                 <div id="panelsStayOpen-taxbrackets" class="accordion-collapse collapse">
                     <div class="accordion-body">
                         <div class="row">
+                            Calculated with 1.7% increase in bracket ceilings each year, and accounted for 2024-2025
+                            trump tax brackets.
                             <table class="table table-hover table-strip">
                                 <thead>
                                     <tr>
@@ -644,16 +669,16 @@
             ];
             return {
                 data: {
-                    columns: { age: true, year: true, salary: true, contrib: true, rmd: true, spending: true, dist: true, pretax: true, roth: true, investment: true, tax: true },
+                    columns: { age: true, year: true, salary: true, contrib: false, contribRoth: true, rmd: true, spending: true, dist: true, pretax: true, roth: true, investment: true, tax: true },
                     yearlyData: [],
                     spending: { beforeRetirement: 100000, afterRetirement: 80000, insurance: 20000 },
                     annualReturn: { beforeRetirement: 10, afterRetirement: 5 },
-                    distribution: { age: 56, amount: 0, bracket: 15, noPenalityAge: 60 },
+                    distribution: { age: 55, amount: 0, bracket: 15, noPenalityAge: 60 },
                     inflation: 3.0,
                     meritIncrease: 2,
                     medicare: { age: 65 },
                     rmd: { age: 72, pretaxBalance: 0, year: 0, lifetimeTable: uniformLifetimeTable },
-                    contrib: { employeePercent: 6, employerPercent: 50, total: 9 },
+                    contrib: { employeePercent: 0, employerPercent: 50, totalPercent: 0, roth401kPercent: 8, rothTotalPercent: 10, employerMatchUpTo: 6 },
                     person: {
                         age: 50, pretaxBalance: 1000000, salary: 100000, dieAtAge: 88,
                         retirement: {
@@ -675,7 +700,9 @@
 
             calculate() {
 
-                this.data.contrib.total = this.data.contrib.employeePercent * (1 + this.data.contrib.employerPercent / 100);
+                this.data.contrib.totalPercent = this.calculateTotal401kWithMatch(this.data.contrib.employeePercent, this.data.contrib.employerPercent, this.data.contrib.employerMatchUpTo);
+                this.data.contrib.rothTotalPercent = this.calculateTotal401kWithMatch(this.data.contrib.roth401kPercent, this.data.contrib.employerPercent, this.data.contrib.employerMatchUpTo);
+
                 this.calculateYearly();
 
                 const rmdYearData = this.data.yearlyData.find(x => x.age === this.data.rmd.age);
@@ -685,6 +712,14 @@
                 this.data.person.retirement = { ...this.data.person.retirement, ...retirementYearData };
 
                 this.saveState();
+            },
+            /**
+             * ex: employer = 7%, employer = 50% up to 6%, total = 10
+             */
+            calculateTotal401kWithMatch(employeePercent, employerPercent, matchUpToPercent) {
+                const adjustedEmployeePercent = employeePercent > matchUpToPercent ? matchUpToPercent : employeePercent;
+                return employeePercent + adjustedEmployeePercent * (employerPercent / 100);
+
             },
             saveState() {
                 localStorage.setItem("data", JSON.stringify(this.data));
@@ -716,7 +751,7 @@
                 let spending = { beforeRetirement: this.data.spending.beforeRetirement, afterRetirement: this.data.spending.afterRetirement };
 
                 for (let i = 0; i <= yearsToCalc; i++) {
-                    let spendingAmount = spending.afterRetirement;
+                    let spendingAmount = 0;
                     //before retirement
                     if (age < this.data.person.retirement.age) {
                         salary = this.calculateGain(i === 0, salary, this.data.meritIncrease);
@@ -729,18 +764,23 @@
                         pretaxBalance = this.calculateGain(i === 0, pretaxBalance, this.data.annualReturn.afterRetirement);
                         investment = this.calculateGain(i === 0, investment, this.data.annualReturn.afterRetirement);
                         roth = this.calculateGain(i === 0, roth, this.data.annualReturn.afterRetirement);
+                        spendingAmount = spending.afterRetirement;
                     }
 
-                    // pretax 401k
-                    let k401 = salary * (this.data.contrib.total) / 100;
+                    // 401k
+                    const k401 = salary * (this.data.contrib.totalPercent / 100);
+                    const k401Employee = salary * (this.data.contrib.employeePercent / 100);
+                    const roth401k = salary * (this.data.contrib.rothTotalPercent / 100);
+                    const roth401kEmployee = salary * (this.data.contrib.roth401kPercent / 100);
+
+                    let taxableEarnedIncome = salary - k401Employee;
+                    let taxableIncome = taxableEarnedIncome; // includes roth conversions
 
                     // rmd age 72+
                     let rmd = 0;
                     if (age >= this.data.rmd.age) {
                         rmd = pretaxBalance / (this.data.rmd.lifetimeTable.find(x => x[0] === age)[1]);
                     }
-
-                    let taxableIncome = salary - k401;
 
                     //** calculate how much to convert
                     let dist = 0;
@@ -759,17 +799,17 @@
                         taxableIncome += dist;
                     }
 
-                    let fica = this.calculateFica(salary, year);
-                    let tax = this.calculateEarnedIncomeTaxForYear(taxableIncome, year);
+                    let fica = this.calculateFica(salary, year); // fica only on salary
+                    let tax = this.calculateOrdinaryIncomeTaxForYear(taxableIncome, year);
                     tax += fica;
 
-                    tax += this.calculateCapitalGainTax();
+                    tax += this.calculateCapitalGainTax(age, tax, dist, spendingAmount, investment);
 
                     // before retirement, state income tax
-                    if (age < this.data.person.retirement.age && investment >= (tax + spendingAmount * 0.15)) {
-                        tax += (taxableIncome) * (this.data.tax.state.beforeRetirement / 100);
+                    if (age < this.data.person.retirement.age) {
+                        tax += taxableIncome * (this.data.tax.state.beforeRetirement / 100);
                     } else {
-                        tax += (taxableIncome + spendingAmount) * (this.data.tax.state.afterRetirement / 100);
+                        tax += taxableIncome * (this.data.tax.state.afterRetirement / 100);
                     }
 
 
@@ -779,6 +819,7 @@
                         year: year,
                         salary: salary,
                         k401: k401,
+                        roth401k: roth401k,
                         rmd: rmd,
                         dist: dist,
                         investment: investment,
@@ -791,11 +832,11 @@
                     /// calculate for next year
                     age++;
                     year++;
-                    roth = roth + dist;
+                    roth = roth + dist + roth401k;
 
                     // before retirement, investment += salary-spending
                     if (age < this.data.person.retirement.age) {
-                        investment += (taxableIncome - spendingAmount - tax);
+                        investment += (taxableIncome - roth401k - spendingAmount - tax);
                     }
                     else {
                         // before 59.5, pay tax from investment (otherwise 10% penality)
@@ -817,21 +858,21 @@
                     spending.afterRetirement = spending.afterRetirement * (1 + this.data.inflation / 100);
                 }
 
-                console.table(this.data.yearlyData);
+                //console.table(this.data.yearlyData);
             },
 
-            calculateCapitalGainTax(age, tax, taxableIncome, spendingAmount) {
+            calculateCapitalGainTax(age, tax, gain, spendingAmount, investment) {
                 // before retirement, spending money is from salary
                 // after retirement
                 // spending money will be paid from investment account sell first, which has 15% tax,
                 // 3.8% medicare surtax on 250k above capital gain
                 // investment account has no money, pay tax from roth, which has no tax
                 let newTax = 0;
-                if (age >= this.data.person.retirement.age && investment >= (tax + spendingAmount * 0.15)) {
+                if (age >= this.data.person.retirement.age && investment >= (spendingAmount + tax + spendingAmount * 0.15)) {
                     newTax += spendingAmount * 0.15;  // 15% capital gain
                     newTax += spendingAmount * (this.data.tax.state.afterRetirement / 100); // state tax
-                    if (taxableIncome + spendingAmount > 250000) {
-                        newTax += (taxableIncome + spendingAmount - 250000) * 0.038;
+                    if (gain + spendingAmount > 250000) {
+                        newTax += (gain + spendingAmount - 250000) * 0.038;
                     }
                 }
                 return newTax;
@@ -925,10 +966,12 @@
                 }
                 return bracket.income;
             },
-            calculateEarnedIncomeTaxForYear(income, year) {
+            calculateOrdinaryIncomeTaxForYear(income, year) {
                 const taxData = this.getTaxBracketsForYear(year);
                 const brackets = taxData.data;
-                income = income - taxData.standardDeduction;
+                const standardDeduction = taxData.standardDeduction > income ? income : taxData.standardDeduction;
+
+                income = income - standardDeduction;
                 let sum = 0;
                 for (let i = 0; i < brackets.length; i++) {
                     const bracket = brackets[i];
@@ -960,7 +1003,6 @@
                     fica += medicareCeiling * medicareRate;
                     fica += (salary - medicareCeiling) * medicareRateOverCeiling;
                 }
-                console.log('fica=', fica, year);
                 return fica;
             },
             getFica_SSTaxCeiling(year) {
@@ -989,7 +1031,6 @@
     <ol>
         <li>before retirement, if started conversion, and salary doesn't cover tax, need to take tax out of investment
         </li>
-        <li>calculate FICA</li>
         <li>calculate SS</li>
         <li>calculate medicare</li>
         <li>custom % conversion</li>
