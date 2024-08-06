@@ -760,8 +760,7 @@
                     }
 
                     let fica = this.calculateFica(salary, year);
-                    let standardDeduction = this.calculateStandardDeduction(year);
-                    let tax = this.calculateEarnedIncomeTaxForYear(taxableIncome - standardDeduction, year);
+                    let tax = this.calculateEarnedIncomeTaxForYear(taxableIncome, year);
                     tax += fica;
 
                     tax += this.calculateCapitalGainTax();
@@ -820,11 +819,7 @@
 
                 console.table(this.data.yearlyData);
             },
-            calculateStandardDeduction(year) {
-                const tdata = this.getTaxBracketsForYear(year);
-                return tdata.standardDeduction;
 
-            },
             calculateCapitalGainTax(age, tax, taxableIncome, spendingAmount) {
                 // before retirement, spending money is from salary
                 // after retirement
@@ -933,7 +928,7 @@
             calculateEarnedIncomeTaxForYear(income, year) {
                 const taxData = this.getTaxBracketsForYear(year);
                 const brackets = taxData.data;
-                //income = income - taxData.standardDeduction;
+                income = income - taxData.standardDeduction;
                 let sum = 0;
                 for (let i = 0; i < brackets.length; i++) {
                     const bracket = brackets[i];
@@ -944,7 +939,6 @@
                     } else {
                         let tax = bracket.percent / 100 * income;
                         sum += tax;
-                        console.log('tax=', sum, year);
                         return sum;
                     }
                 }
