@@ -190,7 +190,7 @@
                                 <label for="data.meritIncrease">Merit Increase:
                                     {{toPercent(data.meritIncrease)}}</label>
                                 <input id="data.meritIncrease" class="form-control" v-model="data.meritIncrease"
-                                    type="number" min="1" step="0.1" @change="calculate" />
+                                    type="number" min="1" step="1" @change="calculate" />
                             </div>
                         </div>
                         <div class="row">
@@ -245,8 +245,7 @@
                             increase of <b>{{toPercent(data.meritIncrease)}}</b>.
                             <br />
                             Your current tax deferred retirement accounts
-                            have<b>{{toDollar(data.person.pretaxBalance)}}</b>
-                            total, you are contributing
+                            have<b>{{toDollar(data.person.pretaxBalance)}}</b>, you are contributing
                             <b>{{toPercent(data.contrib.employeePercent)}}</b> of your
                             salary to 401k, and your employer contributes
                             <b>{{toPercent(data.contrib.employerPercent)}}</b> of
@@ -383,20 +382,22 @@
                             <div class="mt-3">
                                 The strategy is to convert your traditional 401k/IRA to Roth IRA as early as possible
                                 (typically after you retire),
-                                you'll pay tax at the time of conversion, once converted, your roth money, including
-                                gains, won't be taxed again,
-                                and there's no required minimum distribution.
+                                you'll pay tax for the year of conversion; once converted, your roth balance, including
+                                gains, won't be taxed again, and there's no required minimum distribution.
                             </div>
                             <div class="mt-3">
                                 You want to start Roth conversion at <b>{{data.rmd.age}}</b>, and withdraw to
                                 fill up the <b>{{toPercent(data.distribution.bracket)}}</b>tax bracket, at
                                 <b>{{data.rmd.age}}</b>, your tax
-                                deferred accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>,
-                                you'll be required to withdraw <b>{{toDollar(data.rmd.pretaxBalance)}}</b> / 27.4 =
-                                <b>{{toDollar(data.rmd.rmd)}}</b> on first year and increases percentage wise every year
-                                after. Your tax bill on that first year distribution is around
-                                <b>{{toDollar(calculateOrdinaryIncomeTaxForYear(this.data.rmd.rmd,
-                                    this.data.rmd.year))}}</b>.
+                                deferred accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>.
+                                <div v-if="data.rmd.pretaxBalance>0">
+                                    you'll be required to withdraw <b>{{toDollar(data.rmd.pretaxBalance)}}</b> / 27.4 =
+                                    <b>{{toDollar(data.rmd.rmd)}}</b> on first year and increases percentage wise every
+                                    year
+                                    after. Your tax bill on that first year distribution is around
+                                    <b>{{toDollar(calculateOrdinaryIncomeTaxForYear(this.data.rmd.rmd,
+                                        this.data.rmd.year))}}</b>.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -431,8 +432,8 @@
                             </div>
                             <div class="col-4">
                                 <label for="inflation">Inflation {{toPercent(data.inflation)}}</label>
-                                <input id="inflation" class="form-control" :value="data.inflation" type="number"
-                                    disabled />
+                                <input id="inflation" class="form-control" v-model="data.inflation" type="number"
+                                    step="1" @change="calculate" />
                             </div>
                         </div>
                         <div>
@@ -441,7 +442,7 @@
                                 <ul>
                                     <li>Federal Ordinary Income Tax (see table below) - with 1.7% increase in bracket
                                         ceilings each year</li>
-                                    <li>Federal Capital Gain Tax (15% for long term)</li>
+                                    <li>Federal Capital Gain Tax (0%/15%/20%/23.8% for long term)</li>
                                     <li>FICA (SS & Medicare), and extra 0.9% for portion of salary income over $250,000;
                                         no FICA on capital gains or roth conversion.</li>
                                     <li>Medicare Surtax 3.8% on Capital Gain for MAGI over $250,000</li>
@@ -471,7 +472,7 @@
                             <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in your tax deferred
                             traditional retirement accounts.
                             <div v-if="data.person.retirement.investment<0" class="alert alert-danger">
-                                Your post-tax balance at retirement will be
+                                Your post-tax balance at retirement age will be
                                 <b>{{toDollar(data.person.retirement.investment)}}</b>,
                                 you don't have enough money to retire, keep working!
                             </div>
@@ -479,7 +480,7 @@
                         <div id="divWithdrawLogic">
                             After retirement, you no longer have salary, all your spending, including taxes that you
                             need to pay
-                            will come from your post-tax investment account first, which means you'll need to pay
+                            should come from your post-tax investment account first, which means you'll need to pay
                             capital gain taxes.
                             You'll need to live on your investment account until you get to
                             <b>{{data.distribution.noPenaltyAge}}</b> to withdraw
@@ -530,7 +531,8 @@
                             <div class="form-check col">
                                 <input class="form-check-input" id="col-rmd" type="checkbox"
                                     v-model="data.columns.rmd" />
-                                <label class="form-check-label" for="col-rmd">RMD</label>
+                                <label class="form-check-label" for="col-rmd"
+                                    title="Required Minimum Distribution">RMD</label>
                             </div>
                             <div class="form-check col">
                                 <input class="form-check-input" id="col-spending" type="checkbox"
@@ -545,7 +547,8 @@
                             <div class="form-check col">
                                 <input class="form-check-input" id="col-pretax" type="checkbox"
                                     v-model="data.columns.pretax" />
-                                <label class="form-check-label" for="col-pretax">Tex Deferred</label>
+                                <label title="traditional 401k, IRA, etc" class="form-check-label" for="col-pretax">Tax
+                                    Deferred Balance</label>
                             </div>
                             <div class="form-check col">
                                 <input class="form-check-input" id="col-roth" type="checkbox"
@@ -570,18 +573,19 @@
                                 <th v-if="data.columns.year">Year</th>
                                 <th v-if="data.columns.salary">Salary</th>
                                 <th v-if="data.columns.contrib">401k Contrib</th>
-                                <th v-if="data.columns.contribRoth">Roth 401k</th>
-                                <th v-if="data.columns.rmd">RMD</th>
+                                <th v-if="data.columns.contribRoth">Roth 401k Contrib</th>
+                                <th title="Required Minimum Distribution" v-if="data.columns.rmd">RMD</th>
                                 <th v-if="data.columns.spending" title="inflation adjusted">Spending
                                 </th>
                                 <th v-if="data.columns.dist">Roth Conversion</th>
                                 <th v-if="data.columns.pretax" title="traditional 401k, IRA">Tax
-                                    Deferred</th>
-                                <th v-if="data.columns.roth">Roth</th>
-                                <th v-if="data.columns.investment" title="brokerage + savings">
+                                    Deferred Balance</th>
+                                <th v-if="data.columns.roth">Roth Balance</th>
+                                <th v-if="data.columns.investment" title="post-tax brokerage + savings">
                                     Investment
                                 </th>
-                                <th v-if="data.columns.tax">Taxes</th>
+                                <th title="FICA, Federal, State, Ordinary Income and Capital Gains"
+                                    v-if="data.columns.tax">Taxes</th>
                             </thead>
                             <tbody>
                                 <tr v-for="yearly in data.yearlyData" :class="{
@@ -590,7 +594,7 @@
                                             medicareAge:yearly.age === data.medicare.age,
                                             ssAge:yearly.age === data.person.ss.age,
                                             noPenaltyAge:yearly.age === data.distribution.noPenaltyAge
-                                        }">
+                                        }" :title="yearly.title">
                                     <td v-if="data.columns.age">{{yearly.age}}</td>
                                     <td v-if="data.columns.year">{{yearly.year}}</td>
                                     <td v-if="data.columns.salary">{{toDollar(yearly.salary)}}</td>
@@ -761,6 +765,27 @@
                 let spending = { beforeRetirement: this.data.spending.beforeRetirement, afterRetirement: this.data.spending.afterRetirement };
 
                 for (let i = 0; i <= yearsToCalc; i++) {
+                    let title = null;
+                    switch (age) {
+                        case this.data.person.retirement.age:
+                            title = "Retirement starts";
+                            break;
+                        case this.data.rmd.age:
+                            title = "Required Minimum Distribution starts";
+                            break;
+                        case this.data.medicare.age:
+                            title = "Medicare starts";
+                            break;
+                        case this.data.person.ss.age:
+                            title = "Social Security benefit starts";
+                            break;
+                        case this.data.distribution.age:
+                            title = "Roth Conversion starts"
+                            break;
+                        case this.data.distribution.noPenaltyAge:
+                            title = "Distribution from pretax balance has no penalty";
+                            break;
+                    }
                     let spendingAmount = 0;
                     //before retirement
                     if (age < this.data.person.retirement.age) {
@@ -809,18 +834,22 @@
                         taxableOrdinaryIncome += dist;
                     }
 
-                    let fica = this.calculateFica(salary, year); // fica only on salary
-                    let tax = this.calculateOrdinaryIncomeTaxForYear(taxableOrdinaryIncome, year);
+                    const fica = this.calculateFica(salary, year); // fica only on salary
+                    const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(taxableOrdinaryIncome, year);
+                    let tax = ordinaryIncomeTax;
                     tax += fica;
 
-                    tax += this.calculateCapitalGainTax(age, year, tax, dist, spendingAmount, investment);
+                    const capitalGainTax = this.calculateCapitalGainTax(age, year, tax, dist, spendingAmount, investment);
+                    tax += capitalGainTax;
 
+                    let stateTax = 0;
                     // before retirement, state income tax
                     if (age < this.data.person.retirement.age) {
-                        tax += taxableOrdinaryIncome * (this.data.tax.state.beforeRetirement / 100);
+                        stateTax = taxableOrdinaryIncome * (this.data.tax.state.beforeRetirement / 100);
                     } else {
-                        tax += taxableOrdinaryIncome * (this.data.tax.state.afterRetirement / 100);
+                        stateTax = taxableOrdinaryIncome * (this.data.tax.state.afterRetirement / 100);
                     }
+                    tax += stateTax;
 
 
                     let yearly = {
@@ -835,7 +864,12 @@
                         investment: investment,
                         roth: roth,
                         tax: tax,
-                        spending: spendingAmount
+                        spending: spendingAmount,
+                        fica: fica,
+                        ordinaryIncomeTax: ordinaryIncomeTax,
+                        capitalGainTax: capitalGainTax,
+                        stateTax: stateTax,
+                        title: title
                     };
                     this.data.yearlyData.push(yearly);
 
@@ -868,7 +902,7 @@
                     spending.afterRetirement = spending.afterRetirement * (1 + this.data.inflation / 100);
                 }
 
-                //console.table(this.data.yearlyData);
+                console.table(this.data.yearlyData);
             },
 
             calculateCapitalGainTax(age, year, tax, dist401k, spendingAmount, investment) {
@@ -1064,6 +1098,7 @@
 <details>
     <summary>TODOs</summary>
     <ol>
+        <li>defect: retirement year tax is 0</li>
         <li>before retirement, if started conversion, and salary doesn't cover tax, need to take tax out of investment
         </li>
         <li>different state capital gain tax from ordinary</li>
