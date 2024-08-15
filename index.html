@@ -121,8 +121,8 @@
                                     type="number" @change="calculate" min="62" max="70" />
                             </div>
                             <div class="col-4">
-                                <label for="person.dieAtAge">Life Expectancy (Age):</label>
-                                <input id="person.dieAtAge" class="form-control" v-model="data.person.dieAtAge"
+                                <label for="person.deceased.age">Life Expectancy (Age):</label>
+                                <input id="person.deceased.age" class="form-control" v-model="data.person.deceased.age"
                                     type="number" @change="calculate" max="100" />
                             </div>
                         </div>
@@ -141,9 +141,9 @@
                             <b>{{data.medicare.age}}</b>.
 
                             Your life expectancy age is
-                            <b>{{data.person.dieAtAge}}</b>.
+                            <b>{{data.person.deceased.age}}</b>.
                             Your total number of years in retirement is
-                            <b>{{data.person.dieAtAge-data.person.retirement.age}}</b>.
+                            <b>{{data.person.deceased.age-data.person.retirement.age}}</b>.
                             <br />
                         </div>
                     </div>
@@ -512,17 +512,18 @@
                         Insights
                     </button>
                 </h2>
-                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show_z">
+                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show">
                     <div class="accordion-body">
                         <div id="divRetirementYear">
-                            Retirement Year <b>{{data.person.retirement.year}}</b> (age
+                            When you retire in <b>{{data.person.retirement.year}}</b> (age
                             <b>{{data.person.retirement.age}}</b>):
-                            You'll have <b>{{toDollar(data.person.retirement.investment)}}</b> in your post-tax
+                            Your net worth will be
+                            <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>:
+                            you'll have <b>{{toDollar(data.person.retirement.investment)}}</b> in your post-tax
                             investment account,
                             <b>{{toDollar(data.person.retirement.roth)}}</b> in your Roth IRA/401k accounts, and
                             <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in your tax deferred
-                            traditional retirement accounts. Total will be
-                            <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>.
+                            traditional retirement accounts.
                             <div v-if="data.person.retirement.investment<0" class="alert alert-danger">
                                 Your post-tax balance at retirement age will be
                                 <b>{{toDollar(data.person.retirement.investment)}}</b>,
@@ -547,6 +548,10 @@
                             should come from your pretax accounts. The step-up rule allows you to pass down your
                             brokerage investment accounts
                             to your children without paying capital gain tax.
+                        </div>
+                        <div class="mt-3">
+                            When you die, your net worth will be
+                            <b>{{toDollar(data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment)}}</b>.
                         </div>
                     </div>
                 </div>
@@ -623,6 +628,10 @@
                                 <label class="form-check-label" for="col-investment">Investment</label>
                             </div>
                             <div class="form-check col">
+                                <input class="form-check-input" id="col-ss" type="checkbox" v-model="data.columns.ss" />
+                                <label class="form-check-label" for="col-ss">Social Seurity</label>
+                            </div>
+                            <div class="form-check col">
                                 <input class="form-check-input" id="col-tax" type="checkbox"
                                     v-model="data.columns.tax" />
                                 <label class="form-check-label" for="col-tax">Taxes</label>
@@ -646,7 +655,7 @@
                                 <th v-if="data.columns.investment" title="post-tax brokerage + savings">
                                     Investment
                                 </th>
-                                <th>Social Security</th>
+                                <th v-if="data.columns.ss">Social Security</th>
                                 <th title="FICA, Federal, State, Ordinary Income and Capital Gains"
                                     v-if="data.columns.tax">
                                     Taxes</th>
@@ -747,7 +756,7 @@
             ];
             return {
                 data: {
-                    columns: { age: true, year: true, salary: true, contrib: false, contribRoth: true, rmd: true, spending: true, dist: true, pretax: true, roth: true, investment: true, tax: true, ss: true },
+                    columns: { age: true, year: true, salary: true, contrib: false, contribRoth: true, rmd: true, spending: true, dist: true, pretax: true, roth: true, investment: true, ss: true, tax: true },
                     yearlyData: [],
                     spending: { beforeRetirement: 100000, afterRetirement: 80000, insurance: 20000 },
                     annualReturn: { beforeRetirement: 10, afterRetirement: 5 },
@@ -761,12 +770,15 @@
                         roth401kPercent: 8, rothTotalPercent: 0, employerMatchUpTo: 6
                     },
                     person: {
-                        age: 50, pretaxBalance: 1000000, salary: 100000, dieAtAge: 88,
+                        age: 50, pretaxBalance: 1000000, salary: 100000,
                         retirement: {
                             age: 55,
                             year: 0,
                             salary: 0,
                             pretaxBalance: 0
+                        },
+                        deceased: {
+                            age: 88
                         },
                         investment: 100000,
                         roth: 100000,
@@ -791,6 +803,9 @@
 
                 const retirementYearData = this.data.yearlyData.find(y => y.age === this.data.person.retirement.age);
                 this.data.person.retirement = { ...this.data.person.retirement, ...retirementYearData };
+
+                const deceasedYearData = this.data.yearlyData.find(y => y.age === this.data.person.deceased.age);
+                this.data.person.deceased = { ... this.data.person.deceased, ...deceasedYearData };
 
                 this.saveState();
             },
@@ -822,7 +837,7 @@
             },
             calculateYearly() {
                 this.data.yearlyData = [];
-                const yearsToCalc = this.data.person.dieAtAge - this.data.person.age;
+                const yearsToCalc = this.data.person.deceased.age - this.data.person.age;
                 let age = this.data.person.age;
                 let year = (new Date()).getFullYear();
                 let pretaxBalance = this.data.person.pretaxBalance;
@@ -1089,7 +1104,7 @@
                     ]
                 }
                 this.data.tax.brackets = [b2017];
-                for (let i = 2018; i < 2018 + this.data.person.dieAtAge; i++) {
+                for (let i = 2018; i < 2018 + this.data.person.deceased.age; i++) {
                     const newdata = this.data.tax.brackets[this.data.tax.brackets.length - 1].data.map(
                         x => { return { percent: x.percent, income: Math.round(x.income * (1 + r)) } }
                     );
