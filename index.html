@@ -470,21 +470,32 @@
                             investment account,
                             <b>{{toDollar(data.person.retirement.roth)}}</b> in your Roth IRA/401k accounts, and
                             <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in your tax deferred
-                            traditional retirement accounts.
+                            traditional retirement accounts. Total will be
+                            <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>.
                             <div v-if="data.person.retirement.investment<0" class="alert alert-danger">
                                 Your post-tax balance at retirement age will be
                                 <b>{{toDollar(data.person.retirement.investment)}}</b>,
                                 you don't have enough money to retire, keep working!
                             </div>
                         </div>
-                        <div id="divWithdrawLogic">
+                        <div id="divWithdrawLogic" class="mt-3">
                             After retirement, you no longer have salary, all your spending, including taxes that you
                             need to pay
-                            should come from your post-tax investment account first, which means you'll need to pay
-                            capital gain taxes.
-                            You'll need to live on your investment account until you get to
-                            <b>{{data.distribution.noPenaltyAge}}</b> to withdraw
-                            from your traditional retirement accounts without penalty.
+                            will come from your post-tax investment account until you reach the age of
+                            <b>{{data.distribution.noPenaltyAge}}</b>,
+                            which means
+                            you'll need to pay
+                            capital gain taxes for investments sold from your brokerage accounts.
+                        </div>
+                        <div class="mt-3">
+                            After you've reached the age of <b>{{data.distribution.noPenaltyAge}}</b> (59.5), you can
+                            withdraw funds from pretax accounts without penalty,
+                            however, you'll pay ordinary income tax for the withdraws.
+                            At this time, instead of selling investments from post-tax accounts to cover taxes and
+                            spending, the funds
+                            should come from your pretax accounts. The step-up rule allows you to pass down your
+                            brokerage investment accounts
+                            to your children without paying capital gain tax.
                         </div>
                     </div>
                 </div>
@@ -688,7 +699,7 @@
                     inflation: 3.0,
                     meritIncrease: 2,
                     medicare: { age: 65 },
-                    rmd: { age: 72, pretaxBalance: 0, year: 0, lifetimeTable: uniformLifetimeTable },
+                    rmd: { age: 75, pretaxBalance: 0, year: 0, lifetimeTable: uniformLifetimeTable },
                     contrib: {  // retirement acct contrib
                         employeePercent: 0, employerPercent: 50, totalPercent: 0,
                         roth401kPercent: 8, rothTotalPercent: 0, employerMatchUpTo: 6
@@ -765,27 +776,8 @@
                 let spending = { beforeRetirement: this.data.spending.beforeRetirement, afterRetirement: this.data.spending.afterRetirement };
 
                 for (let i = 0; i <= yearsToCalc; i++) {
-                    let title = null;
-                    switch (age) {
-                        case this.data.person.retirement.age:
-                            title = "Retirement starts";
-                            break;
-                        case this.data.rmd.age:
-                            title = "Required Minimum Distribution starts";
-                            break;
-                        case this.data.medicare.age:
-                            title = "Medicare starts";
-                            break;
-                        case this.data.person.ss.age:
-                            title = "Social Security benefit starts";
-                            break;
-                        case this.data.distribution.age:
-                            title = "Roth Conversion starts"
-                            break;
-                        case this.data.distribution.noPenaltyAge:
-                            title = "Distribution from pretax balance has no penalty";
-                            break;
-                    }
+                    const title = this.getRowTitle(age);
+
                     let spendingAmount = 0;
                     //before retirement
                     if (age < this.data.person.retirement.age) {
@@ -834,6 +826,7 @@
                         taxableOrdinaryIncome += dist;
                     }
 
+                    // -- taxes
                     const fica = this.calculateFica(salary, year); // fica only on salary
                     const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(taxableOrdinaryIncome, year);
                     let tax = ordinaryIncomeTax;
@@ -850,6 +843,7 @@
                         stateTax = taxableOrdinaryIncome * (this.data.tax.state.afterRetirement / 100);
                     }
                     tax += stateTax;
+                    // --- end of taxes
 
 
                     let yearly = {
@@ -878,20 +872,16 @@
                     year++;
                     roth = roth + dist + roth401k;
 
-                    // before retirement, investment += salary-spending
+                    // before retirement, investment balance += salary-spending
                     if (age < this.data.person.retirement.age) {
                         investment += (taxableOrdinaryIncome - roth401k - spendingAmount - tax);
                     }
                     else {
                         // before 59.5, pay tax from investment (otherwise 10% penality)
-                        // after that, pay from investment if there's enough
+                        // after that, pay from pretax if there's enough
                         // otherwise pay from the converted roth
                         if (age >= this.data.distribution.noPenaltyAge) {
-                            if (investment >= tax + spendingAmount) {
-                                investment -= (tax + spendingAmount);
-                            } else {
-                                roth -= (tax + spendingAmount);
-                            }
+                            roth -= (tax + spendingAmount);
                         } else {
                             investment -= (tax + spendingAmount);
                         }
@@ -904,10 +894,34 @@
 
                 console.table(this.data.yearlyData);
             },
+            getRowTitle(age) {
+                let title = '';
+                switch (age) {
+                    case this.data.person.retirement.age:
+                        title = "Retirement starts";
+                        break;
+                    case this.data.rmd.age:
+                        title = "Required Minimum Distribution starts";
+                        break;
+                    case this.data.medicare.age:
+                        title = "Medicare starts";
+                        break;
+                    case this.data.person.ss.age:
+                        title = "Social Security benefit starts";
+                        break;
+                    case this.data.distribution.age:
+                        title = "Roth Conversion starts"
+                        break;
+                    case this.data.distribution.noPenaltyAge:
+                        title = "Distribution from pretax balance has no penalty";
+                        break;
+                }
+                return title;
+            },
 
             calculateCapitalGainTax(age, year, tax, dist401k, spendingAmount, investment) {
-                // before retirement, spending money is from salary
-                // after retirement
+                // before retirement, spending money is from salary, no capital gain
+                // after retirement, before no penalty withdraw age 59.5
                 // spending money will be paid from investment account sell first, which has 15% tax,
                 // 3.8% medicare surtax on 250k above capital gain
                 // investment account has no money, pay tax from roth, which has no tax
@@ -915,27 +929,32 @@
                 if (age < this.data.person.retirement.age) {
                     return 0;
                 }
-                const investmentWithdraws = spendingAmount + tax + spendingAmount * 0.15;
-                const taxable = dist401k + investmentWithdraws; // assuming all taken from investment
+                if (age < this.data.distribution.noPenaltyAge) {
+                    const investmentWithdraws = spendingAmount + tax + spendingAmount * 0.15;
+                    const taxable = dist401k + investmentWithdraws; // assuming all taken from investment
 
-                if (investment < investmentWithdraws) {
-                    return 0;  // take money from roth, no tax
-                }
-
-                let newTax = 0;
-                const noTaxCeiling = this.getCapitalGain0TaxCeiling(year);
-                if (taxable > noTaxCeiling) {
-                    newTax += investmentWithdraws * 0.15;  // 15% capital gain
-                } // otheriwse
-                if (taxable > 250000) {
-                    if (dist401k >= 250000) {
-                        newTax += (investmentWithdraws - 250000) * 0.038;
-                    } else {
-                        newTax += (250000 - dist401k + investmentWithdraws) * 0.038;
+                    if (investment < investmentWithdraws) {
+                        return 0;  // take money from roth, no tax
                     }
+
+                    let newTax = 0;
+                    const noTaxCeiling = this.getCapitalGain0TaxCeiling(year);
+                    if (taxable > noTaxCeiling) {
+                        newTax += investmentWithdraws * 0.15;  // 15% capital gain
+                    } // otheriwse
+                    if (taxable > 250000) {
+                        if (dist401k >= 250000) {
+                            newTax += (investmentWithdraws - 250000) * 0.038;
+                        } else {
+                            newTax += (250000 - dist401k + investmentWithdraws) * 0.038;
+                        }
+                    }
+                    newTax += investmentWithdraws * (this.data.tax.state.afterRetirement / 100); // state tax for capital gain
+                    return newTax;
                 }
-                newTax += investmentWithdraws * (this.data.tax.state.afterRetirement / 100); // state tax for capital gain
-                return newTax;
+                // age > 59.5, take money from pretax ira
+                return 0;
+
             },
 
             getCapitalGain0TaxCeiling(year) {
