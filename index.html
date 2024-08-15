@@ -116,9 +116,9 @@
                                     disabled />
                             </div>
                             <div class="col-4">
-                                <label for="person.ss.age">Social Security Benefit Age (62-67):</label>
+                                <label for="person.ss.age">Social Security Benefit Age (62-70):</label>
                                 <input id="person.ss.age" class="form-control" v-model="data.person.ss.age"
-                                    type="number" @change="calculate" min="62" max="67" />
+                                    type="number" @change="calculate" min="62" max="70" />
                             </div>
                             <div class="col-4">
                                 <label for="person.dieAtAge">Life Expectancy (Age):</label>
@@ -161,15 +161,16 @@
                 <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show_z">
                     <div class="accordion-body">
                         <div class="row">
+                            <h6>Current Savings (you and spouse)</h6>
                             <div class="col-4">
-                                <label for="txtpretaxBalance">Current Traditional Retirement:
+                                <label for="txtpretaxBalance" title="Traditional IRA, 401k, etc">Current Pretax Balance:
                                     {{toDollar(data.person.pretaxBalance)}}</label>
                                 <input id="txtpretaxBalance" class="form-control" v-model="data.person.pretaxBalance"
                                     step="100" type="number" @change="calculate" />
                             </div>
 
                             <div class="col-4">
-                                <label for="data.person.roth">Current Roth:
+                                <label for="data.person.roth">Current Roth Balance:
                                     {{toDollar(data.person.roth)}}</label>
                                 <input id="data.person.roth" class="form-control" v-model="data.person.roth"
                                     type="number" min="0" step="1000" @change="calculate" />
@@ -180,20 +181,23 @@
                                 <input id="data.person.investment" class="form-control" v-model="data.person.investment"
                                     type="number" min="1" step="1000" @change="calculate" />
                             </div>
-                            <div class="col-4">
-                                <label for="data.person.salary">Current Salary:
-                                    {{toDollar(data.person.salary)}}</label>
-                                <input id="data.person.salary" class="form-control" v-model="data.person.salary"
-                                    type="number" min="0" step="1000" @change="calculate" />
+                            <hr />
+                            <div class="row">
+                                <h6>Salary based income and savings (you and spouse)</h6>
+                                <div class="col-4">
+                                    <label for="data.person.salary">Current Combined Salary:
+                                        {{toDollar(data.person.salary)}}</label>
+                                    <input id="data.person.salary" class="form-control" v-model="data.person.salary"
+                                        type="number" min="0" step="1000" @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="data.meritIncrease">Merit Increase:
+                                        {{toPercent(data.meritIncrease)}}</label>
+                                    <input id="data.meritIncrease" class="form-control" v-model="data.meritIncrease"
+                                        type="number" min="1" step="1" @change="calculate" />
+                                </div>
                             </div>
-                            <div class="col-4">
-                                <label for="data.meritIncrease">Merit Increase:
-                                    {{toPercent(data.meritIncrease)}}</label>
-                                <input id="data.meritIncrease" class="form-control" v-model="data.meritIncrease"
-                                    type="number" min="1" step="1" @change="calculate" />
-                            </div>
-                        </div>
-                        <div class="row">
+
                             <div class="col-4">
                                 <label for="contrib.employeePercent">Employee 401k Contribution:
                                     {{toPercent(data.contrib.employeePercent)}}</label>
@@ -222,6 +226,27 @@
                                     v-model="data.contrib.employerMatchUpTo" type="number" min="0" max="10" step="1"
                                     @change="calculate" />
                             </div>
+                        </div>
+                        <hr />
+                        <div class="row">
+                            <h6>Social Security Benefits (you and spouse)</h6>
+                            <div>check https://secure.ssa.gov/ for estimated SS Benefits</div>
+                            <div class="col-4">
+                                <label for="person.ss.age2">Social Security Benefit Age (62-70):</label>
+                                <input id="person.ss.age2" class="form-control" v-model="data.person.ss.age"
+                                    type="number" @change="calculate" min="62" max="70" />
+                            </div>
+                            <div class="col-4">
+                                <label for="data.person.ss.perMonth">Monthly Benefit Amount:
+                                    {{toDollar(data.person.ss.perMonth)}}</label>
+                                <input id="data.person.ss.perMonth" class="form-control"
+                                    v-model="data.person.ss.perMonth" type="number" step="100" @change="calculate" />
+                            </div>
+
+                        </div>
+                        <hr />
+                        <div class="row">
+                            <h6>Rate of return</h6>
                             <div class="col-4">
                                 <label for="annualReturn.beforeRetirement">Annual Return Before Retirement:
                                     {{toPercent(data.annualReturn.beforeRetirement)}}</label>
@@ -237,8 +262,11 @@
                                     @change="calculate" />
                             </div>
                         </div>
+                        <hr />
                         <div id="divSalary">
-                            <h5>Summary</h5>
+                            <h5>Summary : Net worth
+                                (<b>{{toDollar(data.person.roth+data.person.investment+data.person.pretaxBalance)}}</b>.)
+                            </h5>
                             Your current household earned income is <b>{{toDollar(data.person.salary)}}</b>, you
                             expect annual
                             merit
@@ -440,7 +468,8 @@
                             <h5>Taxes</h5>
                             <div class="mt-3">
                                 <ul>
-                                    <li>Federal Ordinary Income Tax (see table below) - with 1.7% increase in bracket
+                                    <li>Federal Ordinary Income Tax (see table below) - with historical 1.7% increase in
+                                        bracket
                                         ceilings each year</li>
                                     <li>Federal Capital Gain Tax (0%/15%/20%/23.8% for long term)</li>
                                     <li>FICA (SS & Medicare), and extra 0.9% for portion of salary income over $250,000;
@@ -448,6 +477,28 @@
                                     <li>Medicare Surtax 3.8% on Capital Gain for MAGI over $250,000</li>
                                     <li>State Taxes allows different taxes for before and after retirement</li>
                                 </ul>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Social Security benefits tax: </h6>
+                                Depending on your 'provisional income', 0%-85% of SSN income is taxed.
+                                'Provisional income' includes gross income (wages, interest, dividend, pension, rent
+                                income), tax-free interest (municipal bond) and 1/2 of SS Benefits.
+                                <ul>
+                                    <li>
+                                        For single filer (tax): if provisional income is less than 25000, 0%; between
+                                        25000 and 34000, then 50%, above 34000 = 85%.
+                                    </li>
+                                    <li>
+                                        Married Filing Jointly: less than 32,000 = 0%, between 32000 and 44000 = 50%, >
+                                        44000, then 85%.
+                                    </li>
+                                    <li>Note: provisional income is not inflation adjusted.</li>
+                                </ul>
+                                The resulting percentage of SS Benefits is subject to ordinary income tax rate.
+                                <br />
+                                Note: The calculation assumes there's no state tax for SS benefits.
+                                <br />
+                                Note: Roth IRA distributions are not included in the provisional income calculation.
                             </div>
                         </div>
                     </div>
@@ -461,7 +512,7 @@
                         Insights
                     </button>
                 </h2>
-                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show">
+                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show_z">
                     <div class="accordion-body">
                         <div id="divRetirementYear">
                             Retirement Year <b>{{data.person.retirement.year}}</b> (age
@@ -595,8 +646,10 @@
                                 <th v-if="data.columns.investment" title="post-tax brokerage + savings">
                                     Investment
                                 </th>
+                                <th>Social Security</th>
                                 <th title="FICA, Federal, State, Ordinary Income and Capital Gains"
-                                    v-if="data.columns.tax">Taxes</th>
+                                    v-if="data.columns.tax">
+                                    Taxes</th>
                             </thead>
                             <tbody>
                                 <tr v-for="yearly in data.yearlyData" :class="{
@@ -619,6 +672,8 @@
                                     <td v-if="data.columns.roth">{{toDollar(yearly.roth)}}</td>
                                     <td v-if="data.columns.investment">
                                         {{toDollar(yearly.investment)}}</td>
+                                    <td v-if="data.columns.ss">
+                                        {{toDollar(yearly.ss)}}</td>
                                     <td v-if="data.columns.tax" class="tax"><span
                                             :title="JSON.stringify(getTaxBracketsForYear(yearly.year).data)">-{{toDollar(yearly.tax)}}</span>
                                     </td>
@@ -641,7 +696,8 @@
                 <div id="panelsStayOpen-taxbrackets" class="accordion-collapse collapse">
                     <div class="accordion-body">
                         <div class="row">
-                            Calculated with 1.7% increase in bracket ceilings each year, and accounted for 2024-2025
+                            Calculated with historical 1.7% increase in bracket ceilings each year, and accounted for
+                            2024-2025
                             trump tax brackets.
                             <table class="table table-hover table-strip">
                                 <thead>
@@ -691,7 +747,7 @@
             ];
             return {
                 data: {
-                    columns: { age: true, year: true, salary: true, contrib: false, contribRoth: true, rmd: true, spending: true, dist: true, pretax: true, roth: true, investment: true, tax: true },
+                    columns: { age: true, year: true, salary: true, contrib: false, contribRoth: true, rmd: true, spending: true, dist: true, pretax: true, roth: true, investment: true, tax: true, ss: true },
                     yearlyData: [],
                     spending: { beforeRetirement: 100000, afterRetirement: 80000, insurance: 20000 },
                     annualReturn: { beforeRetirement: 10, afterRetirement: 5 },
@@ -714,7 +770,7 @@
                         },
                         investment: 100000,
                         roth: 100000,
-                        ss: { age: 67 }
+                        ss: { age: 67, perMonth: 3000 }
                     },
                     tax: { brackets: [], state: { beforeRetirement: 5, afterRetirement: 0 } }
                 }
@@ -826,13 +882,17 @@
                         taxableOrdinaryIncome += dist;
                     }
 
-                    // -- taxes
+                    const ss = this.calculateSSBenefits(age);
+                    const spendingAfterSS = spendingAmount - ss;
+
+                    // ===========  taxes
                     const fica = this.calculateFica(salary, year); // fica only on salary
-                    const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(taxableOrdinaryIncome, year);
+                    const taxableSS = this.calculateSSToTax(taxableEarnedIncome, ss);
+                    const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(taxableOrdinaryIncome + taxableSS, year);
                     let tax = ordinaryIncomeTax;
                     tax += fica;
 
-                    const capitalGainTax = this.calculateCapitalGainTax(age, year, tax, dist, spendingAmount, investment);
+                    const capitalGainTax = this.calculateCapitalGainTax(age, year, tax, dist, spendingAfterSS, investment);
                     tax += capitalGainTax;
 
                     let stateTax = 0;
@@ -843,7 +903,7 @@
                         stateTax = taxableOrdinaryIncome * (this.data.tax.state.afterRetirement / 100);
                     }
                     tax += stateTax;
-                    // --- end of taxes
+                    // ==========  end of taxes
 
 
                     let yearly = {
@@ -863,7 +923,8 @@
                         ordinaryIncomeTax: ordinaryIncomeTax,
                         capitalGainTax: capitalGainTax,
                         stateTax: stateTax,
-                        title: title
+                        title: title,
+                        ss: ss
                     };
                     this.data.yearlyData.push(yearly);
 
@@ -874,16 +935,16 @@
 
                     // before retirement, investment balance += salary-spending
                     if (age < this.data.person.retirement.age) {
-                        investment += (taxableOrdinaryIncome - roth401k - spendingAmount - tax);
+                        investment += (taxableOrdinaryIncome - roth401k - spendingAfterSS - tax);
                     }
                     else {
                         // before 59.5, pay tax from investment (otherwise 10% penality)
                         // after that, pay from pretax if there's enough
                         // otherwise pay from the converted roth
                         if (age >= this.data.distribution.noPenaltyAge) {
-                            roth -= (tax + spendingAmount);
+                            roth -= (tax + spendingAfterSS);
                         } else {
-                            investment -= (tax + spendingAmount);
+                            investment -= (tax + spendingAfterSS);
                         }
                     }
 
@@ -893,6 +954,28 @@
                 }
 
                 console.table(this.data.yearlyData);
+            },
+            calculateSSBenefits(age) {
+                if (age < this.data.person.ss.age) {
+                    return 0;
+                }
+
+                let yearlySs = this.data.person.ss.perMonth * 12;
+                for (let i = this.data.person.ss.age + 1; i <= age; i++) {
+                    yearlySs = yearlySs * (1 + this.data.inflation / 100);
+                }
+
+                return yearlySs;
+            },
+            calculateSSToTax(otherIncome, ss) {
+                const provisionalIncome = otherIncome + ss;
+                if (provisionalIncome < 32000)
+                    return 0;
+                if (provisionalIncome < 44000)
+                    return ss * 0.5;
+
+                //else
+                return ss * 0.85;
             },
             getRowTitle(age) {
                 let title = '';
@@ -1117,7 +1200,7 @@
 <details>
     <summary>TODOs</summary>
     <ol>
-        <li>defect: retirement year tax is 0</li>
+        <li>add calculation for Singler filer, and other types</li>
         <li>before retirement, if started conversion, and salary doesn't cover tax, need to take tax out of investment
         </li>
         <li>different state capital gain tax from ordinary</li>
