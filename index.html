@@ -102,9 +102,9 @@
                                     disabled />
                             </div>
                             <div class="col-4">
-                                <label for="distribution.noPenaltyAge">IRA no-penality withdraw age 59.5:</label>
-                                <input id="distribution.noPenaltyAge" class="form-control"
-                                    :value="data.distribution.noPenaltyAge" type="number" disabled />
+                                <label for="noPenaltyDist.age">IRA no-penality withdraw age 59.5:</label>
+                                <input id="noPenaltyDist.age" class="form-control" :value="data.noPenaltyDist.age"
+                                    type="number" disabled />
                             </div>
                             <div class="col-4">
                                 <label for="data.medicare.age">Medicare Age:</label>
@@ -383,7 +383,8 @@
                                 <select id="distribution.braket" @change="calculate" class="form-select"
                                     v-model="data.distribution.bracket">
                                     <option value="0">0%</option>
-                                    <option v-for="b in getTaxBracketsForYear(data.person.retirement.year).data"
+                                    <option
+                                        v-for="b in getTaxBracketsForYear(new Date().getFullYear() + (data.distribution.age - data.person.age)).data"
                                         :value="b.percent">{{b.percent}}% -
                                         {{toDollar(b.income)}}</option>
                                 </select>
@@ -524,24 +525,41 @@
                             <b>{{toDollar(data.person.retirement.roth)}}</b> in your Roth IRA/401k accounts, and
                             <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in your tax deferred
                             traditional retirement accounts.
-                            <div v-if="data.person.retirement.investment<0" class="alert alert-danger">
-                                Your post-tax balance at retirement age will be
+                            <div v-if="data.person.retirement.investment<0" class="alert alert-danger mt-3">
+                                Your current retirement plan cannot get you to <b>{{data.person.retirement.age}}</b>,
+                                your post-tax balance will be
                                 <b>{{toDollar(data.person.retirement.investment)}}</b>,
-                                you don't have enough money to retire, keep working!
+                                try adjusting your retirement plan!
+                            </div>
+                            <div v-if="data.noPenaltyDist.investment<0 && data.noPenaltyDist.pretaxBalance> 0"
+                                class="alert alert-danger mt-3">
+                                Your current retirement plan cannot get you to <b>{{data.noPenaltyDist.age}}</b> where
+                                you can withdraw from pretax accounts without penalty.
+                                Your post-tax savings is <b>{{toDollar(data.noPenaltyDist.investment)}}</b>,
+                                You have <b>{{toDollar(data.noPenaltyDist.pretaxBalance)}}</b> in pretax accounts,
+                                consider "55 rule" or "72t" for early withdraw, or adjust your plan.
                             </div>
                         </div>
                         <div id="divWithdrawLogic" class="mt-3">
-                            After retirement, you no longer have salary, all your spending, including taxes that you
+                            After retirement, all your spending, including taxes that you
                             need to pay
                             will come from your post-tax investment account until you reach the age of
-                            <b>{{data.distribution.noPenaltyAge}}</b>,
-                            which means
-                            you'll need to pay
-                            capital gain taxes for investments sold from your brokerage accounts.
+                            <b>{{data.noPenaltyDist.age}}</b>,
+                            which means you'll need to pay
+                            capital gain taxes for investments sold from your brokerage accounts to cover your
+                            spendings.
                         </div>
                         <div class="mt-3">
-                            After you've reached the age of <b>{{data.distribution.noPenaltyAge}}</b> (59.5), you can
-                            withdraw funds from pretax accounts without penalty,
+                            After you've reached the age of <b>{{data.noPenaltyDist.age}}</b> (59.5),
+                            your net worth will be
+                            <b>{{toDollar(data.noPenaltyDist.roth+data.noPenaltyDist.pretaxBalance+data.noPenaltyDist.investment)}}</b>:
+                            you'll have <b>{{toDollar(data.noPenaltyDist.investment)}}</b> in your post-tax
+                            investment account,
+                            <b>{{toDollar(data.noPenaltyDist.roth)}}</b> in your Roth IRA/401k accounts, and
+                            <b>{{toDollar(data.noPenaltyDist.pretaxBalance)}}</b> in your tax deferred
+                            traditional retirement accounts.
+                            you can start
+                            withdrawing funds from pretax accounts without penalty,
                             however, you'll pay ordinary income tax for the withdraws.
                             At this time, instead of selling investments from post-tax accounts to cover taxes and
                             spending, the funds
@@ -666,7 +684,7 @@
                                             rmdAge:yearly.age ===data.rmd.age,
                                             medicareAge:yearly.age === data.medicare.age,
                                             ssAge:yearly.age === data.person.ss.age,
-                                            noPenaltyAge:yearly.age === data.distribution.noPenaltyAge
+                                            noPenaltyAge:yearly.age === data.noPenaltyDist.age
                                         }" :title="yearly.title">
                                     <td v-if="data.columns.age">{{yearly.age}}</td>
                                     <td v-if="data.columns.year">{{yearly.year}}</td>
@@ -761,6 +779,7 @@
                     spending: { beforeRetirement: 100000, afterRetirement: 80000, insurance: 20000 },
                     annualReturn: { beforeRetirement: 10, afterRetirement: 5 },
                     distribution: { age: 55, amount: 0, bracket: 15, noPenaltyAge: 60 },
+                    noPenaltyDist: { age: 60 },
                     inflation: 3.0,
                     meritIncrease: 2,
                     medicare: { age: 65 },
@@ -806,6 +825,9 @@
 
                 const deceasedYearData = this.data.yearlyData.find(y => y.age === this.data.person.deceased.age);
                 this.data.person.deceased = { ... this.data.person.deceased, ...deceasedYearData };
+
+                const noPenaltyDistYearData = this.data.yearlyData.find(y => y.age === this.data.noPenaltyDist.age);
+                this.data.noPenaltyDist = { ...this.data.noPenaltyDist, ...noPenaltyDistYearData };
 
                 this.saveState();
             },
@@ -956,7 +978,7 @@
                         // before 59.5, pay tax from investment (otherwise 10% penality)
                         // after that, pay from pretax if there's enough
                         // otherwise pay from the converted roth
-                        if (age >= this.data.distribution.noPenaltyAge) {
+                        if (age >= this.data.noPenaltyDist.age) {
                             roth -= (tax + spendingAfterSS);
                         } else {
                             investment -= (tax + spendingAfterSS);
@@ -983,7 +1005,7 @@
                 return yearlySs;
             },
             calculateSSToTax(otherIncome, ss) {
-                const provisionalIncome = otherIncome + ss;
+                const provisionalIncome = otherIncome + ss / 2;
                 if (provisionalIncome < 32000)
                     return 0;
                 if (provisionalIncome < 44000)
@@ -1010,7 +1032,7 @@
                     case this.data.distribution.age:
                         title = "Roth Conversion starts"
                         break;
-                    case this.data.distribution.noPenaltyAge:
+                    case this.data.noPenaltyDist.age:
                         title = "Distribution from pretax balance has no penalty";
                         break;
                 }
@@ -1027,7 +1049,7 @@
                 if (age < this.data.person.retirement.age) {
                     return 0;
                 }
-                if (age < this.data.distribution.noPenaltyAge) {
+                if (age < this.data.noPenaltyDist.age) {
                     const investmentWithdraws = spendingAmount + tax + spendingAmount * 0.15;
                     const taxable = dist401k + investmentWithdraws; // assuming all taken from investment
 
