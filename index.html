@@ -452,8 +452,9 @@
                             <div class="mt-3">
                                 Your Roth conversion starts at <b>{{data.distribution.age}}</b>, and
                                 fills up the <b>{{toPercent(data.distribution.bracket)}}</b>tax bracket;
-                                at <b>{{data.yearlyData.find(x => x.pretaxBalance == 0).age}}</b>, your tax deferred
-                                accounts will have <b>$0.00</b>;
+                                <span v-if="data.yearlyData.find(x => x.pretaxBalance == 0)">at
+                                    <b>{{data.yearlyData.find(x => x.pretaxBalance == 0).age}}</b>, your tax deferred
+                                    accounts will have <b>$0.00</b>;</span>
 
                                 at <b>{{data.rmd.age}}</b>, your tax
                                 deferred accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>.
