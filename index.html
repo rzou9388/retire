@@ -80,7 +80,7 @@
 
         <h3>Early Retirement Planner</h3>
         <hr />
-        <div class="accordion" id="accordionPanelsStayOpenExample">
+        <div class="accordion" id="accordion1">
             <div class="accordion-item">
                 <h2 class="accordion-header">
                     <button class="accordion-button" type="button" data-bs-toggle="collapse"
@@ -313,7 +313,7 @@
                         Spending
                     </button>
                 </h2>
-                <div id="panelsStayOpen-spending" class="accordion-collapse collapse show_z">
+                <div id="panelsStayOpen-spending" class="accordion-collapse collapse show">
                     <div class="accordion-body">
                         <div class="row">
                             <div class="col-4">
@@ -333,7 +333,7 @@
                                     @change="calculate" />
                             </div>
                             <div class="col-4">
-                                <label for="data.spending.insurance">Yearly Health Insurance (After Retirement, Before
+                                <label for="data.spending.insurance">Yearly Retirement Health Insurance (Before
                                     Medicare)
                                     {{toDollar(data.spending.insurance)}}
                                 </label>
@@ -356,10 +356,12 @@
                                 <b>{{toDollar(data.spending.afterRetirement/12)}}</b>:
                                 <ul>
                                     <li>Lower housing expenses, and hopefully no more mortgage</li>
-                                    <li>Health insurances - before Medicare</li>
                                     <li>Higher medical expenses</li>
                                     <li>More traveling</li>
                                 </ul>
+                            </div>
+                            <div>
+                                Your estimated starting Medicare year <b>{{data.medicare.year}}</b> cost based on
                             </div>
                             <div v-if="data.person.retirement.age < data.medicare.age">
                                 When you retire in <b>{{data.person.retirement.age-data.person.age}}</b> years at
@@ -388,7 +390,7 @@
                         Roth Conversions
                     </button>
                 </h2>
-                <div id="panelsStayOpen-collapse4" class="accordion-collapse collapse show">
+                <div id="panelsStayOpen-collapse4" class="accordion-collapse collapse show_z">
                     <div class="accordion-body">
                         <div class="row">
                             <div class="col-4">
@@ -432,14 +434,15 @@
                                 distribution is taxed at the ordinary income rate.
                             </div>
                             <div class="mt-3">
-                                The 'ordinary income' means that you'll have taxable income, which affects the
+                                The 'ordinary income' also means that you'll have taxable income, which affects the
                                 tax you pay,
-                                your Medicare payment, and Social Security retirement benefit taxes.
-                            </div>
-                            <div class="mt-3">
-                                There are also some tax benefits of keeping some money in the tax-deferred accounts,
-                                however, you want
-                                the amount to be low enough that you won't be forced to take out a lot each year.
+                                your Medicare payment, and Social Security retirement benefit taxes. However,
+                                there are some tax benefits of keeping some money in the tax-deferred accounts,
+                                you want the amount to be low enough that you won't be forced to take out a lot each
+                                year.
+                                The RMD money you are forced to take out cannot be directly converted to Roth IRA. The
+                                IRS requires that you take the RMD for the year before you can perform a Roth
+                                conversion.
                             </div>
                             <div class="mt-3">
                                 The strategy is to convert your traditional 401k/IRA to Roth IRA as early as possible
@@ -512,10 +515,13 @@
                                         bracket
                                         ceilings each year</li>
                                     <li>Federal Capital Gain Tax (0%/15%/20%/23.8% for long term)</li>
-                                    <li>FICA (SS & Medicare), and extra 0.9% for portion of salary income over $250,000;
+                                    <li>FICA (SS & Medicare), 6.2%, and extra 0.9% for portion of salary income over
+                                        $250,000;
                                         no FICA on capital gains or roth conversion.</li>
-                                    <li>Medicare Surtax 3.8% on Capital Gain for MAGI over $250,000</li>
-                                    <li>State Taxes allows different taxes for before and after retirement</li>
+                                    <li>Medicare Surtax 3.8% on Capital Gain for MAGI over $250,000.</li>
+                                    <li>State Taxes allows different taxes for before and after retirement.</li>
+                                    <li>Standard deduction for 65+ is increased by 1550 per person in 2024, an increase
+                                        of 3.3% from 2023.</li>
                                 </ul>
                             </div>
                             <div class="mt-3">
@@ -556,7 +562,7 @@
                     <div class="accordion-body">
 
                         <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how
-                            much taxes you need to pay.
+                            much taxes you will pay.
                         </div>
                         <div id="divRetirementYear">
                             <h6>Retirement year <b>{{data.person.retirement.year}}</b> (age
@@ -759,6 +765,7 @@
                                         Investment
                                     </th>
                                     <th v-if="data.columns.ss">Social Security</th>
+                                    <th v-if="data.columns.medicare">Medicare</th>
                                     <th title="FICA, Federal, State, Ordinary Income and Capital Gains"
                                         v-if="data.columns.tax">
                                         Taxes</th>
@@ -795,6 +802,7 @@
                                         </td>
                                         <td v-if="data.columns.ss">
                                             {{toDollar(yearly.ss)}}</td>
+                                        <td v-if="data.columns.medicare">{{toDollar(yearly.medicare)}}</td>
                                         <td v-if="data.columns.tax"><span :class="{negative:yearly.tax>0}"
                                                 :title="JSON.stringify(getTaxBracketsForYear(yearly.year).data)">-{{toDollar(yearly.tax)}}</span>
                                         </td>
@@ -839,7 +847,6 @@
                                                         <td>{{toDollar(b.income)}}</td>
                                                     </tr>
                                                 </table>
-
                                             </td>
                                         </tr>
                                     </tbody>
@@ -851,8 +858,10 @@
             </div>
 
         </div>
-</body>
+    </div>
 
+
+</body>
 <script type="module">
     import { createApp } from "vue";
     createApp({
@@ -870,7 +879,11 @@
             ];
             return {
                 data: {
-                    columns: { age: true, year: true, salary: true, contrib: true, contribRoth: false, rmd: true, spending: true, dist: true, pretax: true, roth: true, investment: true, ss: true, tax: true },
+                    columns: {
+                        age: true, year: true, salary: true, contrib: true, contribRoth: false,
+                        rmd: true, spending: true, dist: true, pretax: true, roth: true, investment: true, ss: true,
+                        medicare: true, tax: true
+                    },
                     yearlyData: [],
                     spending: { beforeRetirement: 100000, afterRetirement: 80000, insurance: 20000 },
                     annualReturn: { beforeRetirement: 12, afterRetirement: 6 },
@@ -878,7 +891,7 @@
                     noPenaltyWithdraw: { age: 60 },
                     inflation: 3.0,
                     meritIncrease: 2,
-                    medicare: { age: 65 },
+                    medicare: { age: 65, premiums: [] },
                     rmd: { age: 75, pretaxBalance: 0, year: 0, lifetimeTable: uniformLifetimeTable },
                     contrib: {  // retirement acct contrib
                         employeePercent: 6, employerPercent: 50, totalPercent: 0,
@@ -913,22 +926,25 @@
 
                 this.calculateYearly();
 
-                const rmdYearData = this.data.yearlyData.find(x => x.age === this.data.rmd.age);
-                this.data.rmd = { ...this.data.rmd, ...rmdYearData };
-
-                const retirementYearData = this.data.yearlyData.find(y => y.age === this.data.person.retirement.age);
-                this.data.person.retirement = { ...this.data.person.retirement, ...retirementYearData };
-
-                const conversionYearData = this.data.yearlyData.find(y => y.age === this.data.distribution.age);
-                this.data.distribution = { ... this.data.distribution, ...conversionYearData };
-
-                const deceasedYearData = this.data.yearlyData.find(y => y.age === this.data.person.deceased.age);
-                this.data.person.deceased = { ... this.data.person.deceased, ...deceasedYearData };
-
-                const noPenaltyWithdrawYearData = this.data.yearlyData.find(y => y.age === this.data.noPenaltyWithdraw.age);
-                this.data.noPenaltyWithdraw = { ...this.data.noPenaltyWithdraw, ...noPenaltyWithdrawYearData };
-
                 this.saveState();
+
+                this.data.rmd = this.mergeYearlyDataByAge(this.data.rmd);
+
+                this.data.person.retirement = this.mergeYearlyDataByAge(this.data.person.retirement);
+
+                this.data.distribution = this.mergeYearlyDataByAge(this.data.distribution);
+
+                this.data.person.deceased = this.mergeYearlyDataByAge(this.data.person.deceased);
+
+                this.data.noPenaltyWithdraw = this.mergeYearlyDataByAge(this.data.noPenaltyWithdraw);
+
+                this.data.medicare = this.mergeYearlyDataByAge(this.data.medicare);
+
+            },
+            mergeYearlyDataByAge(originalData) {
+                const oneYearData = this.data.yearlyData.find(y => y.age === originalData.age);
+                const merged = { ...originalData, ...oneYearData };
+                return merged;
             },
             /**
              * ex: employer = 7%, employer = 50% up to 6%, total = 10
@@ -1020,7 +1036,7 @@
                     }
 
                     const ss = this.calculateSSBenefits(age);
-                    const spendingAfterSS = spendingAmount - ss;
+                    let spendingAfterSS = spendingAmount - ss;
 
                     // ===========  taxes
                     const fica = this.calculateFica(salary, year); // fica only on salary
@@ -1041,6 +1057,16 @@
                     }
                     tax += stateTax;
                     // ==========  end of taxes
+                    let medicareBPremium = 0;
+                    if (age >= this.data.person.retirement.age) {
+                        if (age >= this.data.medicare.age) { // medicare kicks in
+                            medicareBPremium = this.getMedicarePremiumsByMagi(taxableOrdinaryIncome + taxableSS, year - 2);
+                            medicareBPremium *= 2 * 12; // 2 people for a year
+                            spendingAfterSS += medicareBPremium;
+                        } else {
+                            spendingAfterSS += this.calculateInsuranceSpendingForYear(year);
+                        }
+                    }
 
                     let yearly = {
                         age: age,
@@ -1060,7 +1086,8 @@
                         capitalGainTax: capitalGainTax,
                         stateTax: stateTax,
                         title: title,
-                        ss: ss
+                        ss: ss,
+                        medicare: medicareBPremium
                     };
                     this.data.yearlyData.push(yearly);
 
@@ -1089,9 +1116,16 @@
                     spending.afterRetirement = spending.afterRetirement * (1 + this.data.inflation / 100);
                 }
 
-                console.table(this.data.yearlyData);
+                //console.table(this.data.yearlyData);
             },
+            calculateInsuranceSpendingForYear(year) {
+                let ins = this.data.spending.insurance;
+                for (let y = new Date().getFullYear() + 1; y <= year; y++) {
+                    ins = ins * (1 + this.data.inflation / 100);
+                }
+                return ins;
 
+            },
             calculateSSBenefits(age) {
                 if (age < this.data.person.ss.age) {
                     return 0;
@@ -1204,6 +1238,60 @@
                     maximumFractionDigits: 1,
                 }).format(val / 100);
             },
+            getMedicarePremiumsByMagi(magi, year) {
+                const premiums = this.getMedicarePremiumsForYear(year);
+                if (premiums == undefined) {
+                    this.estimateMedicarePremiumsforAllYears(); // deceased year might have changed, estimate again
+                    return this.getMedicarePremiumsByMagi(magi, year);
+                }
+                const premium = premiums.data[0].monthly;
+                for (let p of premiums.data) {
+                    if (magi >= p.ceiling) {
+                        premium = p.monthly;
+                        break;
+                    }
+                }
+                return premium;
+            },
+            getMedicarePremiumsForYear(year) {
+                if (!this.data.medicare.premiums || this.data.medicare.premiums.length === 0) {
+                    this.estimateMedicarePremiumsforAllYears();
+                }
+                const premiums = this.data.medicare.premiums.find(y => y.year === year);
+                return premiums;
+            },
+            estimateMedicarePremiumsforAllYears() {
+                //calculate part b only
+                // increase rate = 6.5%  // https://www.statista.com/statistics/1284023/annual-percentage-change-of-medicare-part-b-premium-us/
+                const premiumIncreaseRate = 0.065;
+                const ceilingIncreaseRate = 0.039; // average of last 5 years
+
+                // ceiling increase rate ~3.9%
+                //premium2024
+                const premium2024 = [
+                    { ceiling: 206000, monthly: 174.7 },
+                    { ceiling: 258000, monthly: 244.6 },
+                    { ceiling: 322000, monthly: 349.4 },
+                    { ceiling: 386000, monthly: 454.2 },
+                    { ceiling: 750000, monthly: 559.00 },
+                    { ceiling: 1000000, monthly: 594.00 }
+                ];
+                this.data.medicare.premiums.push({
+                    year: 2024,
+                    data: premium2024
+                });
+
+                const deceaseYear = (new Date()).getFullYear() + (this.data.person.deceased.age - this.data.person.age);
+                for (let i = 2025; i < deceaseYear; i++) {
+                    const previousPremium = this.data.medicare.premiums.find(x => x.year == i - 1).data;
+                    const newPremium = previousPremium.map(x => { return { ceiling: x.ceiling * (1 + ceilingIncreaseRate), monthly: x.monthly * (1 + premiumIncreaseRate) } });
+                    this.data.medicare.premiums.push({
+                        year: i,
+                        data: newPremium
+                    });
+                }
+                console.log('medicare premiums: ', this.data.medicare.premiums);
+            },
             getTaxBracketsForYear(year) {
                 try {
                     if (this.data.tax.brackets && this.data.tax.brackets.length !== 0) {
@@ -1213,7 +1301,7 @@
                     console.error('year=', year, 'ex=', ex);
                 }
 
-                // historical yearly bracket increase around 1.5% in from 2007-2017
+                // historical yearly bracket increase around 1.6% in from 2007-2017
                 const r = 0.016;
 
                 // 2018 has diff tax bracket
@@ -1231,13 +1319,25 @@
                     ]
                 }
                 this.data.tax.brackets = [b2017];
+                let extra65standardDeduction = 3010;  // 2024 extra was 3010, it will get adjusted at the same rate as tax brackets
                 for (let i = 2018; i < 2018 + this.data.person.deceased.age; i++) {
                     const newdata = this.data.tax.brackets[this.data.tax.brackets.length - 1].data.map(
                         x => { return { percent: x.percent, income: Math.round(x.income * (1 + r)) } }
                     );
+                    let standardDeduction = this.data.tax.brackets[this.data.tax.brackets.length - 1].standardDeduction * (1 + r);
+
+                    // if 65, add 65 extra standard deduction for one year, then following years will be based on 65
+                    const age = this.data.person.age + (year - (new Date().getFullYear()));
+                    if (i > 2024 & age <= 65) {
+                        extra65standardDeduction *= (1 + r);
+                        if (age === 65) {
+                            standardDeduction += extra65standardDeduction;
+                        }
+                    }
+
                     this.data.tax.brackets.push({
                         year: i,
-                        standardDeduction: this.data.tax.brackets[this.data.tax.brackets.length - 1].standardDeduction * (1 + r),
+                        standardDeduction: standardDeduction,
                         data: newdata
                     })
                 }
@@ -1338,7 +1438,6 @@
         }
     }).mount("#app");
 </script>
-
 <details>
     <summary>TODOs</summary>
     <ol>
