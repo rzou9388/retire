@@ -89,10 +89,10 @@
                         Age
                     </button>
                 </h2>
-                <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show_z">
+                <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show">
                     <div class="accordion-body">
                         <div class="row">
-                            <div class="col-4">
+                            <div class="col-4 ">
                                 <label for="txtAge">Current Age:</label>
                                 <input id="txtAge" class="form-control" v-model="data.person.age" step="1" type="number"
                                     @change="calculate" max="100" />
@@ -164,7 +164,7 @@
                     </button>
                 </h2>
 
-                <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show_z">
+                <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show">
                     <div class="accordion-body">
                         <div class="row">
                             <h6>Current Savings (you and spouse)</h6>
@@ -369,8 +369,6 @@
                                 you are not yet qualified for Medicare, your estimated your monthly health insurance out
                                 of pocket before Medicare kicks in is
                                 <b>{{toDollar(data.spending.insurance/12)}}</b>.
-                                <div class="alert alert-warning">Insurance and medical costs not yet added to
-                                    calculation</div>
                             </div>
 
                             <div class="mt-3">
@@ -390,7 +388,7 @@
                         Roth Conversions
                     </button>
                 </h2>
-                <div id="panelsStayOpen-collapse4" class="accordion-collapse collapse show_z">
+                <div id="panelsStayOpen-collapse4" class="accordion-collapse collapse show">
                     <div class="accordion-body">
                         <div class="row">
                             <div class="col-4">
@@ -456,7 +454,7 @@
                                 Your Roth conversion starts at <b>{{data.distribution.age}}</b>, and
                                 fills up the <b>{{toPercent(data.distribution.bracket)}}</b>tax bracket;
                                 <span v-if="data.yearlyData.find(x => x.pretaxBalance == 0)">at
-                                    <b>{{data.yearlyData.find(x => x.pretaxBalance == 0).age}}</b>, your tax deferred
+                                    <b>{{data.yearlyData.find(x => x.pretaxBalance == 0).age-1}}</b>, your tax deferred
                                     accounts will have <b>$0.00</b>;</span>
 
                                 at <b>{{data.rmd.age}}</b>, your tax
@@ -482,7 +480,7 @@
                         Taxes & Inflation
                     </button>
                 </h2>
-                <div id="panelsStayOpen-taxes" class="accordion-collapse collapse show_z">
+                <div id="panelsStayOpen-taxes" class="accordion-collapse collapse show">
                     <div class="accordion-body">
                         <div class="row">
                             <div class="col-4">
@@ -558,7 +556,7 @@
                         Insights
                     </button>
                 </h2>
-                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show_z">
+                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show">
                     <div class="accordion-body">
 
                         <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how
@@ -586,7 +584,7 @@
                             need to pay
                             will come from your post-tax investment account until you reach the age of
                             <b>{{data.noPenaltyWithdraw.age}}</b>,
-                            which means that you'll need paycapital gain taxes for the amount drawn.
+                            which means that you'll need pay capital gain taxes for the amount drawn.
                             <div class="alert">Note: the calculation assumes 50% withdraws from post-tax investment
                                 accounts are capital gains</div>
                         </div>
@@ -612,8 +610,7 @@
                                 At this time, instead of selling investments from post-tax accounts to cover taxes and
                                 spending, the funds
                                 should come from your pretax accounts. The step-up rule allows you to pass down your
-                                brokerage investment accounts
-                                to your children without paying capital gain tax.
+                                brokerage investment balance to your heir without incurring capital gain tax.
                             </div>
                             <div v-if="data.noPenaltyWithdraw.investment<0" class="alert alert-danger mt-3">
                                 Your current retirement plan cannot get you through
@@ -736,6 +733,11 @@
                                     <label class="form-check-label" for="col-investment">Investment</label>
                                 </div>
                                 <div class="form-check col">
+                                    <input class="form-check-input" id="col-medicare" type="checkbox"
+                                        v-model="data.columns.medicare" />
+                                    <label class="form-check-label" for="col-medicare">MedicareB Prem</label>
+                                </div>
+                                <div class="form-check col">
                                     <input class="form-check-input" id="col-ss" type="checkbox"
                                         v-model="data.columns.ss" />
                                     <label class="form-check-label" for="col-ss">Social Seurity</label>
@@ -764,8 +766,8 @@
                                     <th v-if="data.columns.investment" title="post-tax brokerage + savings">
                                         Investment
                                     </th>
-                                    <th v-if="data.columns.ss">Social Security</th>
                                     <th v-if="data.columns.medicare">Medicare</th>
+                                    <th v-if="data.columns.ss">Social Security</th>
                                     <th title="FICA, Federal, State, Ordinary Income and Capital Gains"
                                         v-if="data.columns.tax">
                                         Taxes</th>
@@ -800,9 +802,12 @@
                                             <span :class="{negative:yearly.investment <0,positive:yearly.investment>0}">
                                                 {{toDollar(yearly.investment)}}</span>
                                         </td>
-                                        <td v-if="data.columns.ss">
-                                            {{toDollar(yearly.ss)}}</td>
-                                        <td v-if="data.columns.medicare">{{toDollar(yearly.medicare)}}</td>
+                                        <td v-if="data.columns.medicare"><span
+                                                :class="{negative:yearly.medicare>0}">-{{toDollar(yearly.medicare)}}</span></span>
+                                        </td>
+                                        <td v-if="data.columns.ss"><span
+                                                :class="{positive:yearly.ss>0}">{{toDollar(yearly.ss)}}</span>
+                                        </td>
                                         <td v-if="data.columns.tax"><span :class="{negative:yearly.tax>0}"
                                                 :title="JSON.stringify(getTaxBracketsForYear(yearly.year).data)">-{{toDollar(yearly.tax)}}</span>
                                         </td>
@@ -1000,6 +1005,9 @@
                         investment = this.calculateGain(i === 0, investment, this.data.annualReturn.afterRetirement);
                         roth = this.calculateGain(i === 0, roth, this.data.annualReturn.afterRetirement);
                         spendingAmount = spending.afterRetirement;
+                        if (age < this.data.medicare.age) {
+                            spendingAmount += this.calculateInsuranceSpendingForYear(year);
+                        }
                     }
 
                     // 401k
@@ -1058,14 +1066,11 @@
                     tax += stateTax;
                     // ==========  end of taxes
                     let medicareBPremium = 0;
-                    if (age >= this.data.person.retirement.age) {
-                        if (age >= this.data.medicare.age) { // medicare kicks in
-                            medicareBPremium = this.getMedicarePremiumsByMagi(taxableOrdinaryIncome + taxableSS, year - 2);
-                            medicareBPremium *= 2 * 12; // 2 people for a year
-                            spendingAfterSS += medicareBPremium;
-                        } else {
-                            spendingAfterSS += this.calculateInsuranceSpendingForYear(year);
-                        }
+
+                    if (age >= this.data.medicare.age) { // medicare kicks in
+                        medicareBPremium = this.getMedicarePremiumsByMagi(taxableOrdinaryIncome + taxableSS, year - 2);
+                        medicareBPremium *= 2 * 12; // 2 people for a year
+                        spendingAfterSS += medicareBPremium;
                     }
 
                     let yearly = {
@@ -1171,7 +1176,7 @@
                         title = "Roth Conversion starts"
                         break;
                     case this.data.noPenaltyWithdraw.age:
-                        title = "Penalty free withdraw from pretax accounts starts";
+                        title = "Penalty free withdraw from pretax accounts starts, your spendings will be taken from pretax accounts first";
                         break;
                 }
                 return title;
