@@ -75,10 +75,9 @@
 <body 1onload="document.getElementById('divRetirementYear').scrollIntoView();">
     <button id="btnReset" style="width:100%" class="btn btn-info"
         onclick="localStorage.clear();window.location.reload()">Data saved
-        to your browser automatically, click here to Reset</button>
+        to your browser ONLY, click here to Reset</button>
     <div id="app" class="container-fluid">
-
-        <h3>Early Retirement Calculator</h3>
+        <h3>Early Retirement Calculator</h3> Click <a href="https://github.com/rzou9388/retire">here</a> for source code
         <hr />
         <div class="accordion" id="accordion1">
             <div class="accordion-item">
@@ -584,7 +583,7 @@
                             need to pay
                             will come from your post-tax investment account until you reach the age of
                             <b>{{data.noPenaltyWithdraw.age}}</b>,
-                            which means that you'll need pay capital gain taxes for the amount drawn.
+                            which means that you'll need to pay capital gain taxes for the amount drawn.
                             <div class="alert">Note: the calculation assumes 50% withdraws from post-tax investment
                                 accounts are capital gains</div>
                         </div>
@@ -1446,15 +1445,12 @@
 <details>
     <summary>TODOs</summary>
     <ol>
-        <li>roth conversion before retirement doesn't take funds from investment</li>
         <li>add calculation for Singler filer, and other types</li>
         <li>before retirement, if started conversion, and salary doesn't cover tax, need to take tax out of investment
         </li>
         <li>different state capital gain tax from ordinary</li>
-        <li>calculate medicare</li>
         <li>custom % conversion</li>
         <li>spouse</li>
-        <li>insurance before medicare</li>
         <li>today's currency view</li>
         <li>one-off expenses & income</li>
     </ol>
