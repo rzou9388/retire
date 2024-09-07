@@ -5,7 +5,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="importmap">
     {
       "imports": {
@@ -70,6 +70,58 @@
             color: green
         }
     </style>
+    <script>
+        function updateChart() {
+            const chartParent = document.getElementById('chartParent');
+            chartParent.innerHTML = '';
+            chartParent.style.display = 'none';
+            chartParent.innerHTML = '<canvas id="chart1"></canvas>';
+            chartParent.style.display = 'block';
+            const yearlyData = JSON.parse(localStorage.getItem('data')).yearlyData;
+            const labels = yearlyData.map(x => x.age);
+            const data = {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Balance',
+                    data: yearlyData.map(x => x.investment + x.roth + x.pretaxBalance),
+                    borderColor: 'rgb(55, 255, 111)',
+                    tension: 0.1
+                }, {
+                    label: 'Post-tax Balance',
+                    data: yearlyData.map(x => x.investment),
+                    borderColor: 'rgb(111, 192, 192)',
+                    tension: 0.1
+                }, {
+                    label: 'Roth Balance',
+                    data: yearlyData.map(x => x.roth),
+                    borderColor: 'rgb(233, 192, 192)',
+                    tension: 0.1
+                },
+                {
+                    label: 'Pretax Balance',
+                    data: yearlyData.map(x => x.pretaxBalance),
+                    borderColor: 'rgb(75, 244, 192)',
+                    tension: 0.1
+                }
+                ]
+            };
+            new Chart(
+                document.getElementById('chart1'),
+                {
+                    type: 'line',
+                    data: data,
+                    options: {
+                        scales: {
+                            y: {
+                                stacked: false
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+    </script>
 </head>
 
 <body 1onload="document.getElementById('divRetirementYear').scrollIntoView();">
@@ -80,6 +132,122 @@
         <h3>Early Retirement Calculator</h3> Click <a href="https://github.com/rzou9388/retire">here</a> for source code
         <hr />
         <div class="accordion" id="accordion1">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="true"
+                        aria-controls="panelsStayOpen-collapseThree">
+                        Summary
+                    </button>
+                </h2>
+                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show">
+                    <div class="accordion-body">
+
+                        <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how
+                            much taxes you will pay.
+                        </div>
+                        <button onclick="updateChart()" class="btn btn-info">Update Chart</button>
+                        <div id="chartParent" style="height:600px;display:none"></div>
+                        <div id="divRetirementYear">
+                            <h6>Retirement year <b>{{data.person.retirement.year}}</b> (age
+                                <b>{{data.person.retirement.age}}</b>)
+                            </h6>
+                            When you retire, your net worth will be
+                            <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>:
+                            you'll have <b>{{toDollar(data.person.retirement.investment)}}</b> in your post-tax
+                            investment accounts,
+                            <b>{{toDollar(data.person.retirement.roth)}}</b> in your Roth IRA/401k accounts, and
+                            <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in your tax deferred
+                            traditional retirement accounts.
+                            <div v-if="data.person.retirement.investment<0" class="alert alert-danger mt-3">
+                                Your current retirement plan cannot get you to <b>{{data.person.retirement.age}}</b>,
+                                your post-tax balance will be
+                                <b>{{toDollar(data.person.retirement.investment)}}</b>,
+                                try adjusting your retirement plan!
+                            </div>
+                            <div class="alert">Note: For ease of calculation, age 60 is used, instead of 59.5</div>
+                            After retirement, all your spending, including taxes that you
+                            need to pay
+                            will come from your post-tax investment account until you reach the age of
+                            <b>{{data.noPenaltyWithdraw.age}}</b>,
+                            which means that you'll need to pay capital gain taxes for the amount drawn.
+                            <div class="alert">Note: the calculation assumes 50% withdraws from post-tax investment
+                                accounts are capital gains</div>
+                        </div>
+
+                        <div id="divWithdrawLogic" class="mt-3">
+                            <h6>Penalty free withdraw year <b>{{data.noPenaltyWithdraw.year}}</b>
+                                (age <b>{{data.noPenaltyWithdraw.age}}</b>)
+                            </h6>
+                            <div class="mt-3">
+                                After you've reached the age of <b>{{data.noPenaltyWithdraw.age}}</b> (59.5),
+                                your net worth will be
+                                <b>{{toDollar(data.noPenaltyWithdraw.roth+data.noPenaltyWithdraw.pretaxBalance+data.noPenaltyWithdraw.investment)}}</b>:
+                                you'll have <b
+                                    :class="{'negative':data.noPenaltyWithdraw.investment<0}">{{toDollar(data.noPenaltyWithdraw.investment)}}</b>
+                                in your post-tax investment account,
+                                <b>{{toDollar(data.noPenaltyWithdraw.roth)}}</b> in your Roth IRA/401k accounts, and
+                                <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in your tax deferred
+                                traditional retirement accounts.
+                                <br />
+                                You can start
+                                withdrawing funds from pretax accounts without penalty,
+                                however, you'll pay ordinary income tax for the withdraws.
+                                At this time, instead of selling investments from post-tax accounts to cover taxes and
+                                spending, the funds
+                                should come from your pretax accounts. The step-up rule allows you to pass down your
+                                brokerage investment balance to your heir without incurring capital gain tax.
+                            </div>
+                            <div v-if="data.noPenaltyWithdraw.investment<0" class="alert alert-danger mt-3">
+                                Your current retirement plan cannot get you through
+                                <b>{{data.noPenaltyWithdraw.age}}</b>
+                                where you can withdraw from pretax accounts without penalty.
+                                Your post-tax savings is <b>{{toDollar(data.noPenaltyWithdraw.investment)}}</b>,
+                                You have <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in pretax accounts,
+                                consider adjusting your plan, or look into "55 rule" or "72t" for early withdraw.
+                            </div>
+
+                            <div class="mt-3">
+                                <h6>Social Security benefit starting year <b>{{data.person.ss.year}}</b>
+                                    (age <b>{{data.person.ss.age}}</b>)</h6>
+
+                                You indicated that you want to start receiving the social security benefit at the age of
+                                <b>{{data.person.ss.age}}</b>, and the monthly benefit will be
+                                <b>{{toDollar(data.person.ss.perMonth)}}</b>.
+                            </div>
+                            <div class="mt-3">
+                                <h6>Required Minimum Distribution year <b>{{data.rmd.year}}</b> (age
+                                    <b>{{data.rmd.age}})</b>
+                                </h6>
+                                Your pretax retirement accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>
+                                <div class="alert" v-if="data.rmd.pretaxBalance<500000">Good Job</div>
+                                <div class="alert" v-if="data.rmd.pretaxBalance>500000">You'll be required to take out
+                                    <b>{{toDollar(data.rmd.rmd)}}</b> from your pretax accounts this year, your
+                                    estimated
+                                    tax bill
+                                    will be
+                                    <b class="negative">{{toDollar(data.rmd.tax)}}</b> for withdraw amount of
+                                    <b>{{toDollar(data.rmd.dist)}}</b>.
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>End of life year <b>{{data.person.deceased.year}}</b> (age
+                                    <b>{{data.person.deceased.age}}</b>)
+                                </h6>
+                                When you die, your net worth will be
+                                <b>{{toDollar(data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment)}}</b>:
+
+                                you'll have <b>{{toDollar(data.person.deceased.investment)}}</b> in your post-tax
+                                investment accounts,
+                                <b>{{toDollar(data.person.deceased.roth)}}</b> in your Roth IRA/401k accounts, and
+                                <b>{{toDollar(data.person.deceased.pretaxBalance)}}</b> in your tax deferred
+                                traditional retirement accounts.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="accordion-item">
                 <h2 class="accordion-header">
                     <button class="accordion-button" type="button" data-bs-toggle="collapse"
@@ -547,268 +715,196 @@
                     </div>
                 </div>
             </div>
+
             <div class="accordion-item">
                 <h2 class="accordion-header">
                     <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="true"
-                        aria-controls="panelsStayOpen-collapseThree">
-                        Insights
+                        data-bs-target="#panelsStayOpen-yearly" aria-expanded="true"
+                        aria-controls="panelsStayOpen-yearly">
+                        Yearly Data
                     </button>
                 </h2>
-                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show">
+                <div id="panelsStayOpen-yearly" class="accordion-collapse collapse show">
                     <div class="accordion-body">
-
-                        <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how
-                            much taxes you will pay.
-                        </div>
-                        <div id="divRetirementYear">
-                            <h6>Retirement year <b>{{data.person.retirement.year}}</b> (age
-                                <b>{{data.person.retirement.age}}</b>)
-                            </h6>
-                            When you retire, your net worth will be
-                            <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>:
-                            you'll have <b>{{toDollar(data.person.retirement.investment)}}</b> in your post-tax
-                            investment accounts,
-                            <b>{{toDollar(data.person.retirement.roth)}}</b> in your Roth IRA/401k accounts, and
-                            <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in your tax deferred
-                            traditional retirement accounts.
-                            <div v-if="data.person.retirement.investment<0" class="alert alert-danger mt-3">
-                                Your current retirement plan cannot get you to <b>{{data.person.retirement.age}}</b>,
-                                your post-tax balance will be
-                                <b>{{toDollar(data.person.retirement.investment)}}</b>,
-                                try adjusting your retirement plan!
+                        <div class="row">
+                            <div class="form-check col-1">
+                                <input class="form-check-input" id="col-age" type="checkbox" @change="saveState"
+                                    v-model="data.columns.age" />
+                                <label class="form-check-label" for="col-age">Age</label>
                             </div>
-                            <div class="alert">Note: For ease of calculation, age 60 is used, instead of 59.5</div>
-                            After retirement, all your spending, including taxes that you
-                            need to pay
-                            will come from your post-tax investment account until you reach the age of
-                            <b>{{data.noPenaltyWithdraw.age}}</b>,
-                            which means that you'll need to pay capital gain taxes for the amount drawn.
-                            <div class="alert">Note: the calculation assumes 50% withdraws from post-tax investment
-                                accounts are capital gains</div>
-                        </div>
-
-                        <div id="divWithdrawLogic" class="mt-3">
-                            <h6>Penalty free withdraw year <b>{{data.noPenaltyWithdraw.year}}</b>
-                                (age <b>{{data.noPenaltyWithdraw.age}}</b>)
-                            </h6>
-                            <div class="mt-3">
-                                After you've reached the age of <b>{{data.noPenaltyWithdraw.age}}</b> (59.5),
-                                your net worth will be
-                                <b>{{toDollar(data.noPenaltyWithdraw.roth+data.noPenaltyWithdraw.pretaxBalance+data.noPenaltyWithdraw.investment)}}</b>:
-                                you'll have <b
-                                    :class="{'negative':data.noPenaltyWithdraw.investment<0}">{{toDollar(data.noPenaltyWithdraw.investment)}}</b>
-                                in your post-tax investment account,
-                                <b>{{toDollar(data.noPenaltyWithdraw.roth)}}</b> in your Roth IRA/401k accounts, and
-                                <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in your tax deferred
-                                traditional retirement accounts.
-                                <br />
-                                You can start
-                                withdrawing funds from pretax accounts without penalty,
-                                however, you'll pay ordinary income tax for the withdraws.
-                                At this time, instead of selling investments from post-tax accounts to cover taxes and
-                                spending, the funds
-                                should come from your pretax accounts. The step-up rule allows you to pass down your
-                                brokerage investment balance to your heir without incurring capital gain tax.
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-year" type="checkbox"
+                                    v-model="data.columns.year" />
+                                <label class="form-check-label" for="col-year">Year</label>
                             </div>
-                            <div v-if="data.noPenaltyWithdraw.investment<0" class="alert alert-danger mt-3">
-                                Your current retirement plan cannot get you through
-                                <b>{{data.noPenaltyWithdraw.age}}</b>
-                                where you can withdraw from pretax accounts without penalty.
-                                Your post-tax savings is <b>{{toDollar(data.noPenaltyWithdraw.investment)}}</b>,
-                                You have <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in pretax accounts,
-                                consider adjusting your plan, or look into "55 rule" or "72t" for early withdraw.
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-salary" type="checkbox"
+                                    v-model="data.columns.salary" />
+                                <label class="form-check-label" for="col-salary">Salary</label>
                             </div>
-
-                            <div class="mt-3">
-                                <h6>Social Security benefit starting year <b>{{data.person.ss.year}}</b>
-                                    (age <b>{{data.person.ss.age}}</b>)</h6>
-
-                                You indicated that you want to start receiving the social security benefit at the age of
-                                <b>{{data.person.ss.age}}</b>, and the monthly benefit will be
-                                <b>{{toDollar(data.person.ss.perMonth)}}</b>.
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-contrib" type="checkbox"
+                                    v-model="data.columns.contrib" />
+                                <label class="form-check-label" for="col-contrib">401K
+                                    Contrib {{toPercent(data.contrib.totalPercent)}}</label>
                             </div>
-                            <div class="mt-3">
-                                <h6>Required Minimum Distribution year <b>{{data.rmd.year}}</b> (age
-                                    <b>{{data.rmd.age}})</b>
-                                </h6>
-                                Your pretax retirement accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>
-                                <div class="alert" v-if="data.rmd.pretaxBalance<500000">Good Job</div>
-                                <div class="alert" v-if="data.rmd.pretaxBalance>500000">You'll be required to take out
-                                    <b>{{toDollar(data.rmd.rmd)}}</b> from your pretax accounts this year, your
-                                    estimated
-                                    tax bill
-                                    will be
-                                    <b class="negative">{{toDollar(data.rmd.tax)}}</b> for withdraw amount of
-                                    <b>{{toDollar(data.rmd.dist)}}</b>.
-                                </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-contribRoth" type="checkbox"
+                                    v-model="data.columns.contribRoth" />
+                                <label class="form-check-label" for="col-contribRoth">Roth 401K
+                                    {{toPercent(data.contrib.rothTotalPercent)}}</label>
                             </div>
-                            <div class="mt-3">
-                                <h6>End of life year <b>{{data.person.deceased.year}}</b> (age
-                                    <b>{{data.person.deceased.age}}</b>)
-                                </h6>
-                                When you die, your net worth will be
-                                <b>{{toDollar(data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment)}}</b>:
-
-                                you'll have <b>{{toDollar(data.person.deceased.investment)}}</b> in your post-tax
-                                investment accounts,
-                                <b>{{toDollar(data.person.deceased.roth)}}</b> in your Roth IRA/401k accounts, and
-                                <b>{{toDollar(data.person.deceased.pretaxBalance)}}</b> in your tax deferred
-                                traditional retirement accounts.
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-rmd" type="checkbox"
+                                    v-model="data.columns.rmd" />
+                                <label class="form-check-label" for="col-rmd"
+                                    title="Required Minimum Distribution">RMD</label>
+                            </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-spending" type="checkbox"
+                                    v-model="data.columns.spending" />
+                                <label class="form-check-label" for="col-spending">Spending</label>
+                            </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-dist" type="checkbox"
+                                    v-model="data.columns.dist" />
+                                <label class="form-check-label" for="col-dist">Roth Conversion</label>
+                            </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-pretax" type="checkbox"
+                                    v-model="data.columns.pretax" />
+                                <label title="traditional 401k, IRA, etc" class="form-check-label" for="col-pretax">Tax
+                                    Deferred Balance</label>
+                            </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-roth" type="checkbox"
+                                    v-model="data.columns.roth" />
+                                <label class="form-check-label" for="col-roth">Roth</label>
+                            </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-investment" type="checkbox"
+                                    v-model="data.columns.investment" />
+                                <label class="form-check-label" for="col-investment">Investment</label>
+                            </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-medicare" type="checkbox"
+                                    v-model="data.columns.medicare" />
+                                <label class="form-check-label" for="col-medicare">MedicareB Prem</label>
+                            </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-ss" type="checkbox" v-model="data.columns.ss" />
+                                <label class="form-check-label" for="col-ss">Social Seurity</label>
+                            </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-tax" type="checkbox"
+                                    v-model="data.columns.tax" />
+                                <label class="form-check-label" for="col-tax">Taxes</label>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="accordion-item">
-                    <h2 class="accordion-header">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#panelsStayOpen-yearly" aria-expanded="true"
-                            aria-controls="panelsStayOpen-yearly">
-                            Yearly Data
-                        </button>
-                    </h2>
-                    <div id="panelsStayOpen-yearly" class="accordion-collapse collapse show">
-                        <div class="accordion-body">
-                            <div class="row">
-                                <div class="form-check col-1">
-                                    <input class="form-check-input" id="col-age" type="checkbox" @change="saveState"
-                                        v-model="data.columns.age" />
-                                    <label class="form-check-label" for="col-age">Age</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-year" type="checkbox"
-                                        v-model="data.columns.year" />
-                                    <label class="form-check-label" for="col-year">Year</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-salary" type="checkbox"
-                                        v-model="data.columns.salary" />
-                                    <label class="form-check-label" for="col-salary">Salary</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-contrib" type="checkbox"
-                                        v-model="data.columns.contrib" />
-                                    <label class="form-check-label" for="col-contrib">401K
-                                        Contrib {{toPercent(data.contrib.totalPercent)}}</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-contribRoth" type="checkbox"
-                                        v-model="data.columns.contribRoth" />
-                                    <label class="form-check-label" for="col-contribRoth">Roth 401K
-                                        {{toPercent(data.contrib.rothTotalPercent)}}</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-rmd" type="checkbox"
-                                        v-model="data.columns.rmd" />
-                                    <label class="form-check-label" for="col-rmd"
-                                        title="Required Minimum Distribution">RMD</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-spending" type="checkbox"
-                                        v-model="data.columns.spending" />
-                                    <label class="form-check-label" for="col-spending">Spending</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-dist" type="checkbox"
-                                        v-model="data.columns.dist" />
-                                    <label class="form-check-label" for="col-dist">Roth Conversion</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-pretax" type="checkbox"
-                                        v-model="data.columns.pretax" />
-                                    <label title="traditional 401k, IRA, etc" class="form-check-label"
-                                        for="col-pretax">Tax
-                                        Deferred Balance</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-roth" type="checkbox"
-                                        v-model="data.columns.roth" />
-                                    <label class="form-check-label" for="col-roth">Roth</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-investment" type="checkbox"
-                                        v-model="data.columns.investment" />
-                                    <label class="form-check-label" for="col-investment">Investment</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-medicare" type="checkbox"
-                                        v-model="data.columns.medicare" />
-                                    <label class="form-check-label" for="col-medicare">MedicareB Prem</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-ss" type="checkbox"
-                                        v-model="data.columns.ss" />
-                                    <label class="form-check-label" for="col-ss">Social Seurity</label>
-                                </div>
-                                <div class="form-check col">
-                                    <input class="form-check-input" id="col-tax" type="checkbox"
-                                        v-model="data.columns.tax" />
-                                    <label class="form-check-label" for="col-tax">Taxes</label>
-                                </div>
-                            </div>
-
-                            <table class="table table-strip table-hover mt-1">
-                                <thead>
-                                    <th v-if="data.columns.age">Age</th>
-                                    <th v-if="data.columns.year">Year</th>
-                                    <th v-if="data.columns.salary">Salary</th>
-                                    <th v-if="data.columns.contrib">401k Contrib</th>
-                                    <th v-if="data.columns.contribRoth">Roth 401k Contrib</th>
-                                    <th title="Required Minimum Distribution" v-if="data.columns.rmd">RMD</th>
-                                    <th v-if="data.columns.spending" title="inflation adjusted">Spending
-                                    </th>
-                                    <th v-if="data.columns.dist">Roth Conversion</th>
-                                    <th v-if="data.columns.pretax" title="traditional 401k, IRA">Tax
-                                        Deferred Balance</th>
-                                    <th v-if="data.columns.roth">Roth Balance</th>
-                                    <th v-if="data.columns.investment" title="post-tax brokerage + savings">
-                                        Investment
-                                    </th>
-                                    <th v-if="data.columns.medicare">Medicare</th>
-                                    <th v-if="data.columns.ss">Social Security</th>
-                                    <th title="FICA, Federal, State, Ordinary Income and Capital Gains"
-                                        v-if="data.columns.tax">
-                                        Taxes</th>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="yearly in data.yearlyData" :class="{
+                        <table class="table table-strip table-hover mt-1">
+                            <thead>
+                                <th v-if="data.columns.age">Age</th>
+                                <th v-if="data.columns.year">Year</th>
+                                <th v-if="data.columns.salary">Salary</th>
+                                <th v-if="data.columns.contrib">401k Contrib</th>
+                                <th v-if="data.columns.contribRoth">Roth 401k Contrib</th>
+                                <th title="Required Minimum Distribution" v-if="data.columns.rmd">RMD</th>
+                                <th v-if="data.columns.spending" title="inflation adjusted">Spending
+                                </th>
+                                <th v-if="data.columns.dist">Roth Conversion</th>
+                                <th v-if="data.columns.pretax" title="traditional 401k, IRA">Tax
+                                    Deferred Balance</th>
+                                <th v-if="data.columns.roth">Roth Balance</th>
+                                <th v-if="data.columns.investment" title="post-tax brokerage + savings">
+                                    Investment
+                                </th>
+                                <th v-if="data.columns.medicare">Medicare</th>
+                                <th v-if="data.columns.ss">Social Security</th>
+                                <th title="FICA, Federal, State, Ordinary Income and Capital Gains"
+                                    v-if="data.columns.tax">
+                                    Taxes</th>
+                            </thead>
+                            <tbody>
+                                <tr v-for="yearly in data.yearlyData" :class="{
                                             retirementAge:yearly.age===data.person.retirement.age,
                                             rmdAge:yearly.age ===data.rmd.age,
                                             medicareAge:yearly.age === data.medicare.age,
                                             ssAge:yearly.age === data.person.ss.age,
                                             noPenaltyAge:yearly.age === data.noPenaltyWithdraw.age
                                         }" :title="yearly.title">
-                                        <td v-if="data.columns.age">{{yearly.age}}</td>
-                                        <td v-if="data.columns.year">{{yearly.year}}</td>
-                                        <td v-if="data.columns.salary">{{toDollar(yearly.salary)}}</td>
-                                        <td v-if="data.columns.contrib">{{toDollar(yearly.k401)}}</td>
-                                        <td v-if="data.columns.contribRoth">{{toDollar(yearly.roth401k)}}</td>
-                                        <td v-if="data.columns.rmd">{{toDollar(yearly.rmd)}}</td>
-                                        <td v-if="data.columns.spending" class="spending">
-                                            -{{toDollar(yearly.spending)}}</td>
-                                        <td v-if="data.columns.dist">{{toDollar(yearly.dist)}}</td>
-                                        <td v-if="data.columns.pretax">
-                                            <span
-                                                :class="{negative:yearly.pretaxBalance <0,positive:yearly.pretaxBalance>0}">
-                                                {{toDollar(yearly.pretaxBalance)}}</span>
-                                        </td>
-                                        <td v-if="data.columns.roth">
-                                            <span
-                                                :class="{negative:yearly.roth <0,positive:yearly.roth>0}">{{toDollar(yearly.roth)}}</span>
-                                        </td>
-                                        <td v-if="data.columns.investment">
-                                            <span :class="{negative:yearly.investment <0,positive:yearly.investment>0}">
-                                                {{toDollar(yearly.investment)}}</span>
-                                        </td>
-                                        <td v-if="data.columns.medicare"><span
-                                                :class="{negative:yearly.medicare>0}">-{{toDollar(yearly.medicare)}}</span></span>
-                                        </td>
-                                        <td v-if="data.columns.ss"><span
-                                                :class="{positive:yearly.ss>0}">{{toDollar(yearly.ss)}}</span>
-                                        </td>
-                                        <td v-if="data.columns.tax"><span :class="{negative:yearly.tax>0}"
-                                                :title="JSON.stringify(getTaxBracketsForYear(yearly.year).data)">-{{toDollar(yearly.tax)}}</span>
+                                    <td v-if="data.columns.age">{{yearly.age}}</td>
+                                    <td v-if="data.columns.year">{{yearly.year}}</td>
+                                    <td v-if="data.columns.salary">{{toDollar(yearly.salary)}}</td>
+                                    <td v-if="data.columns.contrib">{{toDollar(yearly.k401)}}</td>
+                                    <td v-if="data.columns.contribRoth">{{toDollar(yearly.roth401k)}}</td>
+                                    <td v-if="data.columns.rmd">{{toDollar(yearly.rmd)}}</td>
+                                    <td v-if="data.columns.spending" class="spending">
+                                        -{{toDollar(yearly.spending)}}</td>
+                                    <td v-if="data.columns.dist">{{toDollar(yearly.dist)}}</td>
+                                    <td v-if="data.columns.pretax">
+                                        <span
+                                            :class="{negative:yearly.pretaxBalance <0,positive:yearly.pretaxBalance>0}">
+                                            {{toDollar(yearly.pretaxBalance)}}</span>
+                                    </td>
+                                    <td v-if="data.columns.roth">
+                                        <span
+                                            :class="{negative:yearly.roth <0,positive:yearly.roth>0}">{{toDollar(yearly.roth)}}</span>
+                                    </td>
+                                    <td v-if="data.columns.investment">
+                                        <span :class="{negative:yearly.investment <0,positive:yearly.investment>0}">
+                                            {{toDollar(yearly.investment)}}</span>
+                                    </td>
+                                    <td v-if="data.columns.medicare"><span
+                                            :class="{negative:yearly.medicare>0}">-{{toDollar(yearly.medicare)}}</span></span>
+                                    </td>
+                                    <td v-if="data.columns.ss"><span
+                                            :class="{positive:yearly.ss>0}">{{toDollar(yearly.ss)}}</span>
+                                    </td>
+                                    <td v-if="data.columns.tax"><span :class="{negative:yearly.tax>0}"
+                                            :title="JSON.stringify(getTaxBracketsForYear(yearly.year).data)">-{{toDollar(yearly.tax)}}</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#panelsStayOpen-taxbrackets" aria-expanded="true"
+                        aria-controls="panelsStayOpen-taxbrackets">
+                        Projected Tax Rates for Married Filing Jointly
+                    </button>
+                </h2>
+                <div id="panelsStayOpen-taxbrackets" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        <div class="row">
+                            Calculated with historical 1.7% increase in bracket ceilings each year, and accounted
+                            for
+                            2024-2025
+                            trump tax brackets.
+                            <table class="table table-hover table-strip">
+                                <thead>
+                                    <tr>
+                                        <th>Year</th>
+                                        <th>Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="y in data.tax.brackets.filter(x => x.year >= (new Date()).getFullYear())">
+                                        <td>{{y.year}}</td>
+                                        <td>
+                                            <table>
+                                                <tr v-for="b in y.data">
+                                                    <td>{{toPercent(b.percent)}}</td>
+                                                    <td>{{toDollar(b.income)}}</td>
+                                                </tr>
+                                            </table>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -816,55 +912,9 @@
                         </div>
                     </div>
                 </div>
-
-
-                <div class="accordion-item">
-                    <h2 class="accordion-header">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#panelsStayOpen-taxbrackets" aria-expanded="true"
-                            aria-controls="panelsStayOpen-taxbrackets">
-                            Projected Tax Rates for Married Filing Jointly
-                        </button>
-                    </h2>
-                    <div id="panelsStayOpen-taxbrackets" class="accordion-collapse collapse">
-                        <div class="accordion-body">
-                            <div class="row">
-                                Calculated with historical 1.7% increase in bracket ceilings each year, and accounted
-                                for
-                                2024-2025
-                                trump tax brackets.
-                                <table class="table table-hover table-strip">
-                                    <thead>
-                                        <tr>
-                                            <th>Year</th>
-                                            <th>Rate</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="y in data.tax.brackets.filter(x => x.year >= (new Date()).getFullYear())">
-                                            <td>{{y.year}}</td>
-                                            <td>
-                                                <table>
-                                                    <tr v-for="b in y.data">
-                                                        <td>{{toPercent(b.percent)}}</td>
-                                                        <td>{{toDollar(b.income)}}</td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
-
         </div>
     </div>
-
-
 </body>
 <script type="module">
     import { createApp } from "vue";

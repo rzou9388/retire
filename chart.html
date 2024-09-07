@@ -1,0 +1,34 @@
+<html>
+
+<head>
+
+</head>
+<div>
+    <canvas id="chart1"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const labels = [44, 50, 60, 62, 65];
+    const data = {
+        labels: labels,
+        datasets: [{
+            label: 'My First Dataset',
+            data: [500000, 1061348, 5489210, 6219208, 7277634],
+            fill: true,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+        }]
+    };
+    new Chart(
+        document.getElementById('chart1'),
+        {
+            type: 'line',
+            data: data
+        }
+    );
+</script>
+
+
+</html>
