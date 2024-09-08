@@ -142,11 +142,6 @@
                 </h2>
                 <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show">
                     <div class="accordion-body">
-
-                        <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how
-                            much taxes you will pay.
-                        </div>
-                        <button onclick="updateChart()" class="btn btn-info">Update Chart</button>
                         <div id="chartParent" style="height:600px;display:none"></div>
                         <div id="divRetirementYear">
                             <h6>Retirement year <b>{{data.person.retirement.year}}</b> (age
@@ -243,6 +238,10 @@
                                 <b>{{toDollar(data.person.deceased.pretaxBalance)}}</b> in your tax deferred
                                 traditional retirement accounts.
                             </div>
+                        </div>
+
+                        <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how
+                            much taxes you will pay.
                         </div>
                     </div>
                 </div>
@@ -918,7 +917,7 @@
 </body>
 <script type="module">
     import { createApp } from "vue";
-    createApp({
+    const app = createApp({
         data() {
 
             let savedData = JSON.parse(localStorage.getItem("data"));
@@ -939,9 +938,9 @@
                         medicare: true, tax: true
                     },
                     yearlyData: [],
-                    spending: { beforeRetirement: 100000, afterRetirement: 80000, insurance: 20000 },
+                    spending: { beforeRetirement: 80000, afterRetirement: 70000, insurance: 20000 },
                     annualReturn: { beforeRetirement: 12, afterRetirement: 6 },
-                    distribution: { age: 55, amount: 0, bracket: 15, bracket2025: 0 },
+                    distribution: { age: 60, amount: 0, bracket: 15, bracket2025: 0 },
                     noPenaltyWithdraw: { age: 60 },
                     inflation: 3.0,
                     meritIncrease: 2,
@@ -952,9 +951,9 @@
                         roth401kPercent: 0, rothTotalPercent: 0, employerMatchUpTo: 6
                     },
                     person: {
-                        age: 50, pretaxBalance: 1000000, salary: 100000,
+                        age: 50, pretaxBalance: 500000, salary: 150000,
                         retirement: {
-                            age: 55,
+                            age: 60,
                             year: 0,
                             salary: 0,
                             pretaxBalance: 0
@@ -994,6 +993,7 @@
 
                 this.data.medicare = this.mergeYearlyDataByAge(this.data.medicare);
 
+                window.setTimeout(updateChart, 200);
             },
             mergeYearlyDataByAge(originalData) {
                 const oneYearData = this.data.yearlyData.find(y => y.age === originalData.age);
@@ -1491,6 +1491,7 @@
             }
         }
     }).mount("#app");
+    app.config.globalProperties.window = window;
 </script>
 <details>
     <summary>TODOs</summary>
