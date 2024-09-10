@@ -15,6 +15,13 @@
     }
   </script>
     <style>
+        @media print {
+            .tab-content>.tab-pane {
+                display: block;
+                opacity: 100;
+            }
+        }
+
         b {
             text-decoration: underline;
             padding: 0 3 0 3;
@@ -69,8 +76,13 @@
         .positive {
             color: green
         }
+
+        .tab-pane {
+            padding: 20px;
+        }
     </style>
     <script>
+        // chart
         function updateChart() {
             const chartParent = document.getElementById('chartParent');
             chartParent.innerHTML = '';
@@ -122,6 +134,15 @@
         }
 
     </script>
+    <script>
+        // adjust panel width
+        function resetDivTab() {
+            setDivTabClass('col-7');
+        }
+        function setDivTabClass(cla) {
+            document.getElementById('divtabs').className = cla;
+        }
+    </script>
 </head>
 
 <body 1onload="document.getElementById('divRetirementYear').scrollIntoView();">
@@ -131,132 +152,42 @@
     <div id="app" class="container-fluid">
         <h3>Early Retirement Calculator</h3> Click <a href="https://github.com/rzou9388/retire">here</a> for source code
         <hr />
-        <div class="accordion" id="accordion1">
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="true"
-                        aria-controls="panelsStayOpen-collapseThree">
-                        Summary
-                    </button>
-                </h2>
-                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse show">
-                    <div class="accordion-body">
-                        <div id="chartParent" style="height:600px;display:none"></div>
-                        <div id="divRetirementYear">
-                            <h6>Retirement year <b>{{data.person.retirement.year}}</b> (age
-                                <b>{{data.person.retirement.age}}</b>)
-                            </h6>
-                            When you retire, your net worth will be
-                            <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>:
-                            you'll have <b>{{toDollar(data.person.retirement.investment)}}</b> in your post-tax
-                            investment accounts,
-                            <b>{{toDollar(data.person.retirement.roth)}}</b> in your Roth IRA/401k accounts, and
-                            <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in your tax deferred
-                            traditional retirement accounts.
-                            <div v-if="data.person.retirement.investment<0" class="alert alert-danger mt-3">
-                                Your current retirement plan cannot get you to <b>{{data.person.retirement.age}}</b>,
-                                your post-tax balance will be
-                                <b>{{toDollar(data.person.retirement.investment)}}</b>,
-                                try adjusting your retirement plan!
-                            </div>
-                            <div class="alert">Note: For ease of calculation, age 60 is used, instead of 59.5</div>
-                            After retirement, all your spending, including taxes that you
-                            need to pay
-                            will come from your post-tax investment account until you reach the age of
-                            <b>{{data.noPenaltyWithdraw.age}}</b>,
-                            which means that you'll need to pay capital gain taxes for the amount drawn.
-                            <div class="alert">Note: the calculation assumes 50% withdraws from post-tax investment
-                                accounts are capital gains</div>
-                        </div>
+        <div class="row">
 
-                        <div id="divWithdrawLogic" class="mt-3">
-                            <h6>Penalty free withdraw year <b>{{data.noPenaltyWithdraw.year}}</b>
-                                (age <b>{{data.noPenaltyWithdraw.age}}</b>)
-                            </h6>
-                            <div class="mt-3">
-                                After you've reached the age of <b>{{data.noPenaltyWithdraw.age}}</b> (59.5),
-                                your net worth will be
-                                <b>{{toDollar(data.noPenaltyWithdraw.roth+data.noPenaltyWithdraw.pretaxBalance+data.noPenaltyWithdraw.investment)}}</b>:
-                                you'll have <b
-                                    :class="{'negative':data.noPenaltyWithdraw.investment<0}">{{toDollar(data.noPenaltyWithdraw.investment)}}</b>
-                                in your post-tax investment account,
-                                <b>{{toDollar(data.noPenaltyWithdraw.roth)}}</b> in your Roth IRA/401k accounts, and
-                                <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in your tax deferred
-                                traditional retirement accounts.
-                                <br />
-                                You can start
-                                withdrawing funds from pretax accounts without penalty,
-                                however, you'll pay ordinary income tax for the withdraws.
-                                At this time, instead of selling investments from post-tax accounts to cover taxes and
-                                spending, the funds
-                                should come from your pretax accounts. The step-up rule allows you to pass down your
-                                brokerage investment balance to your heir without incurring capital gain tax.
-                            </div>
-                            <div v-if="data.noPenaltyWithdraw.investment<0" class="alert alert-danger mt-3">
-                                Your current retirement plan cannot get you through
-                                <b>{{data.noPenaltyWithdraw.age}}</b>
-                                where you can withdraw from pretax accounts without penalty.
-                                Your post-tax savings is <b>{{toDollar(data.noPenaltyWithdraw.investment)}}</b>,
-                                You have <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in pretax accounts,
-                                consider adjusting your plan, or look into "55 rule" or "72t" for early withdraw.
-                            </div>
+            <div id="divtabs" class="col-7">
+                <nav>
+                    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                        <button class="nav-link active" id="nav-home-tab" data-bs-toggle="tab"
+                            data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home"
+                            aria-selected="true" onclick="resetDivTab()">Age</button>
+                        <button class="nav-link" id="nav-income-tab" data-bs-toggle="tab" data-bs-target="#nav-income"
+                            onclick="resetDivTab()" type="button" role="tab" aria-controls="nav-income"
+                            aria-selected="false">Income &
+                            Savings</button>
+                        <button class="nav-link" id="nav-spending-tab" data-bs-toggle="tab" onclick="resetDivTab()"
+                            data-bs-target="#nav-spending" type="button" role="tab" aria-controls="nav-spending"
+                            aria-selected="false">Spending</button>
+                        <button class="nav-link" id="nav-roth-tab" data-bs-toggle="tab" data-bs-target="#nav-roth"
+                            onclick="resetDivTab()" type="button" role="tab" aria-controls="nav-roth"
+                            aria-selected="false">Roth
+                            Conversion</button>
 
-                            <div class="mt-3">
-                                <h6>Social Security benefit starting year <b>{{data.person.ss.year}}</b>
-                                    (age <b>{{data.person.ss.age}}</b>)</h6>
+                        <button class="nav-link" id="nav-taxes-tab" data-bs-toggle="tab" data-bs-target="#nav-taxes"
+                            onclick="resetDivTab()" type="button" role="tab" aria-controls="nav-taxes"
+                            aria-selected="false">Taxes &
+                            Inflation</button>
+                        <button class="nav-link" id="nav-yearly-tab" data-bs-toggle="tab" data-bs-target="#nav-yearly"
+                            type="button" role="tab" aria-controls="nav-yearly" aria-selected="false"
+                            onclick="setDivTabClass('col-12')">Yearly
+                            Data</button>
+                        <button class="nav-link" id="nav-info-tab" data-bs-toggle="tab" data-bs-target="#nav-info"
+                            onclick="resetDivTab()" type="button" role="tab" aria-controls="nav-info"
+                            aria-selected="false">Info</button>
 
-                                You indicated that you want to start receiving the social security benefit at the age of
-                                <b>{{data.person.ss.age}}</b>, and the monthly benefit will be
-                                <b>{{toDollar(data.person.ss.perMonth)}}</b>.
-                            </div>
-                            <div class="mt-3">
-                                <h6>Required Minimum Distribution year <b>{{data.rmd.year}}</b> (age
-                                    <b>{{data.rmd.age}})</b>
-                                </h6>
-                                Your pretax retirement accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>
-                                <div class="alert" v-if="data.rmd.pretaxBalance<500000">Good Job</div>
-                                <div class="alert" v-if="data.rmd.pretaxBalance>500000">You'll be required to take out
-                                    <b>{{toDollar(data.rmd.rmd)}}</b> from your pretax accounts this year, your
-                                    estimated
-                                    tax bill
-                                    will be
-                                    <b class="negative">{{toDollar(data.rmd.tax)}}</b> for withdraw amount of
-                                    <b>{{toDollar(data.rmd.dist)}}</b>.
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <h6>End of life year <b>{{data.person.deceased.year}}</b> (age
-                                    <b>{{data.person.deceased.age}}</b>)
-                                </h6>
-                                When you die, your net worth will be
-                                <b>{{toDollar(data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment)}}</b>:
-
-                                you'll have <b>{{toDollar(data.person.deceased.investment)}}</b> in your post-tax
-                                investment accounts,
-                                <b>{{toDollar(data.person.deceased.roth)}}</b> in your Roth IRA/401k accounts, and
-                                <b>{{toDollar(data.person.deceased.pretaxBalance)}}</b> in your tax deferred
-                                traditional retirement accounts.
-                            </div>
-                        </div>
-
-                        <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how
-                            much taxes you will pay.
-                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true"
-                        aria-controls="panelsStayOpen-collapseOne">
-                        Age
-                    </button>
-                </h2>
-                <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show">
-                    <div class="accordion-body">
+                </nav>
+                <div class="tab-content" id="nav-tabContent">
+                    <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">
                         <div class="row">
                             <div class="col-4 ">
                                 <label for="txtAge">Current Age:</label>
@@ -319,19 +250,7 @@
                             <br />
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button " type="button" data-bs-toggle="collapse"
-                        data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false"
-                        aria-controls="panelsStayOpen-collapseTwo">
-                        Income & Savings
-                    </button>
-                </h2>
-
-                <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show">
-                    <div class="accordion-body">
+                    <div class="tab-pane fade" id="nav-income" role="tabpanel" aria-labelledby="nav-income-tab">
                         <div class="row">
                             <h6>Current Savings (you and spouse)</h6>
                             <div class="col-4">
@@ -469,93 +388,75 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#panelsStayOpen-spending" aria-expanded="true"
-                        aria-controls="panelsStayOpen-spending">
-                        Spending
-                    </button>
-                </h2>
-                <div id="panelsStayOpen-spending" class="accordion-collapse collapse show">
-                    <div class="accordion-body">
-                        <div class="row">
-                            <div class="col-4">
-                                <label for="data.spending.beforeRetirement">Yearly (Before Retirement)
-                                    {{toDollar(data.spending.beforeRetirement)}}
-                                </label>
-                                <input id="data.spending.beforeRetirement" class="form-control"
-                                    v-model="data.spending.beforeRetirement" type="number" step="10000"
-                                    @change="calculate" />
-                            </div>
-                            <div class="col-4">
-                                <label for="data.spending.afterRetirement">Yearly (After Retirement)
-                                    {{toDollar(data.spending.afterRetirement)}}
-                                </label>
-                                <input id="data.spending.afterRetirement" class="form-control"
-                                    v-model="data.spending.afterRetirement" type="number" step="10000"
-                                    @change="calculate" />
-                            </div>
-                            <div class="col-4">
-                                <label for="data.spending.insurance">Yearly Retirement Health Insurance (Before
-                                    Medicare)
-                                    {{toDollar(data.spending.insurance)}}
-                                </label>
-                                <input id="data.spending.insurance" class="form-control"
-                                    v-model="data.spending.insurance" type="number" step="1000" @change="calculate" />
-                            </div>
-                            <div>
-                                Your estimated yearly spending <b>before</b> retirement is
-                                <b>{{toDollar(data.spending.beforeRetirement)}}</b>,
-                                monthly spending is <b>{{toDollar(data.spending.beforeRetirement/12)}}</b>,
-                                this should include:
-                                <ul>
-                                    <li>Housing</li>
-                                    <li>Your expensive kid(s) - tuition, activities, etc</li>
-                                </ul>
-                            </div>
-                            <div>
-                                Your estimated yearly spending <b>after</b> retirement is
-                                <b>{{toDollar(data.spending.afterRetirement)}}</b>, monthly spending is
-                                <b>{{toDollar(data.spending.afterRetirement/12)}}</b>:
-                                <ul>
-                                    <li>Lower housing expenses, and hopefully no more mortgage</li>
-                                    <li>Higher medical expenses</li>
-                                    <li>More traveling</li>
-                                </ul>
-                            </div>
-                            <div>
-                                Your estimated starting Medicare year <b>{{data.medicare.year}}</b> cost based on
-                            </div>
-                            <div v-if="data.person.retirement.age < data.medicare.age">
-                                When you retire in <b>{{data.person.retirement.age-data.person.age}}</b> years at
-                                <b>{{data.person.retirement.age}}</b>,
-                                you are not yet qualified for Medicare, your estimated your monthly health insurance out
-                                of pocket before Medicare kicks in is
-                                <b>{{toDollar(data.spending.insurance/12)}}</b>.
-                            </div>
+                    <div class="tab-pane fade" id="nav-spending" role="tabpanel" aria-labelledby="nav-spending-tab">
+                        <div>
+                            <div class="row">
+                                <div class="col-4">
+                                    <label for="data.spending.beforeRetirement">Yearly (Before Retirement)
+                                        {{toDollar(data.spending.beforeRetirement)}}
+                                    </label>
+                                    <input id="data.spending.beforeRetirement" class="form-control"
+                                        v-model="data.spending.beforeRetirement" type="number" step="10000"
+                                        @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="data.spending.afterRetirement">Yearly (After Retirement)
+                                        {{toDollar(data.spending.afterRetirement)}}
+                                    </label>
+                                    <input id="data.spending.afterRetirement" class="form-control"
+                                        v-model="data.spending.afterRetirement" type="number" step="10000"
+                                        @change="calculate" />
+                                </div>
+                                <div class="col-4">
+                                    <label for="data.spending.insurance">Yearly Retirement Health Insurance (Before
+                                        Medicare)
+                                        {{toDollar(data.spending.insurance)}}
+                                    </label>
+                                    <input id="data.spending.insurance" class="form-control"
+                                        v-model="data.spending.insurance" type="number" step="1000"
+                                        @change="calculate" />
+                                </div>
+                                <div>
+                                    Your estimated yearly spending <b>before</b> retirement is
+                                    <b>{{toDollar(data.spending.beforeRetirement)}}</b>,
+                                    monthly spending is <b>{{toDollar(data.spending.beforeRetirement/12)}}</b>,
+                                    this should include:
+                                    <ul>
+                                        <li>Housing</li>
+                                        <li>Your expensive kid(s) - tuition, activities, etc</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    Your estimated yearly spending <b>after</b> retirement is
+                                    <b>{{toDollar(data.spending.afterRetirement)}}</b>, monthly spending is
+                                    <b>{{toDollar(data.spending.afterRetirement/12)}}</b>:
+                                    <ul>
+                                        <li>Lower housing expenses, and hopefully no more mortgage</li>
+                                        <li>Higher medical expenses</li>
+                                        <li>More traveling</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    Your estimated starting Medicare year <b>{{data.medicare.year}}</b> cost based on
+                                </div>
+                                <div v-if="data.person.retirement.age < data.medicare.age">
+                                    When you retire in <b>{{data.person.retirement.age-data.person.age}}</b> years at
+                                    <b>{{data.person.retirement.age}}</b>,
+                                    you are not yet qualified for Medicare, your estimated your monthly health insurance
+                                    out
+                                    of pocket before Medicare kicks in is
+                                    <b>{{toDollar(data.spending.insurance/12)}}</b>.
+                                </div>
 
-                            <div class="mt-3">
-                                Your spending will be adjusted for <b>{{toPercent(data.inflation)}}</b> inflation every
-                                year.
+                                <div class="mt-3">
+                                    Your spending will be adjusted for <b>{{toPercent(data.inflation)}}</b> inflation
+                                    every
+                                    year.
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#panelsStayOpen-collapse4" aria-expanded="true"
-                        aria-controls="panelsStayOpen-collapse4">
-                        Roth Conversions
-                    </button>
-                </h2>
-                <div id="panelsStayOpen-collapse4" class="accordion-collapse collapse show">
-                    <div class="accordion-body">
+                    <div class="tab-pane fade" id="nav-roth" role="tabpanel">
                         <div class="row">
                             <div class="col-4">
                                 <label for="distribution.age">Age to start Roth Conversion
@@ -589,7 +490,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div>
+                        <div class="mt-3">
                             <h5>Required Minimum Distribution <b>{{data.rmd.year}}</b> (age <b>{{data.rmd.age}}</b>)
                             </h5>
                             <div class="mt-3">
@@ -621,7 +522,7 @@
                                 fills up the <b>{{toPercent(data.distribution.bracket)}}</b>tax bracket;
                                 <span v-if="data.yearlyData.find(x => x.pretaxBalance == 0)">at
                                     <b>{{data.yearlyData.find(x => x.pretaxBalance == 0).age-1}}</b>, your tax deferred
-                                    accounts will have <b>$0.00</b>;</span>
+                                    accounts will have <b>$0.00</b></span>
 
                                 at <b>{{data.rmd.age}}</b>, your tax
                                 deferred accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>.
@@ -636,18 +537,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#panelsStayOpen-taxes" aria-expanded="true"
-                        aria-controls="panelsStayOpen-taxes">
-                        Taxes & Inflation
-                    </button>
-                </h2>
-                <div id="panelsStayOpen-taxes" class="accordion-collapse collapse show">
-                    <div class="accordion-body">
+                    <div class="tab-pane fade" id="nav-taxes" role="tabpanel">
                         <div class="row">
                             <div class="col-4">
                                 <label for="data.tax.state.beforeRetirement">State Tax (Before Retirement)
@@ -712,19 +602,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#panelsStayOpen-yearly" aria-expanded="true"
-                        aria-controls="panelsStayOpen-yearly">
-                        Yearly Data
-                    </button>
-                </h2>
-                <div id="panelsStayOpen-yearly" class="accordion-collapse collapse show">
-                    <div class="accordion-body">
+                    <div class="tab-pane fade" id="nav-yearly" role="tabpanel">
                         <div class="row">
                             <div class="form-check col-1">
                                 <input class="form-check-input" id="col-age" type="checkbox" @change="saveState"
@@ -867,49 +745,159 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="tab-pane fade" id="nav-info">
+                        <details>
+                            <summary>Projected Tax Rates</summary>
+                            <div class="row">
+                                Calculated with historical 1.7% increase in bracket ceilings each year, and accounted
+                                for
+                                2024-2025
+                                trump tax brackets.
+                                <table class="table table-hover table-strip">
+                                    <thead>
+                                        <tr>
+                                            <th>Year</th>
+                                            <th>Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="y in data.tax.brackets.filter(x => x.year >= (new Date()).getFullYear())">
+                                            <td>{{y.year}}</td>
+                                            <td>
+                                                <table>
+                                                    <tr v-for="b in y.data">
+                                                        <td>{{toPercent(b.percent)}}</td>
+                                                        <td>{{toDollar(b.income)}}</td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+
+                    </div>
                 </div>
             </div>
+            <div class="col-5">
+                <h4>Summary</h4>
+                <div id="chartParent" style="height:450px;display:none"></div>
+                <div id="divCurrentYear" class="mt-3">
+                    <h6>Current year <b>{{new Date().getFullYear()}}</b> (age
+                        <b>{{data.person.age}}</b>)
+                    </h6>
+                    Your current net worth is
+                    (<b>{{toDollar(data.person.roth+data.person.investment+data.person.pretaxBalance)}}</b>.)
 
-
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#panelsStayOpen-taxbrackets" aria-expanded="true"
-                        aria-controls="panelsStayOpen-taxbrackets">
-                        Projected Tax Rates for Married Filing Jointly
-                    </button>
-                </h2>
-                <div id="panelsStayOpen-taxbrackets" class="accordion-collapse collapse">
-                    <div class="accordion-body">
-                        <div class="row">
-                            Calculated with historical 1.7% increase in bracket ceilings each year, and accounted
-                            for
-                            2024-2025
-                            trump tax brackets.
-                            <table class="table table-hover table-strip">
-                                <thead>
-                                    <tr>
-                                        <th>Year</th>
-                                        <th>Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="y in data.tax.brackets.filter(x => x.year >= (new Date()).getFullYear())">
-                                        <td>{{y.year}}</td>
-                                        <td>
-                                            <table>
-                                                <tr v-for="b in y.data">
-                                                    <td>{{toPercent(b.percent)}}</td>
-                                                    <td>{{toDollar(b.income)}}</td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                </div>
+                <hr />
+                <div id="divRetirementYear">
+                    <h6>Retirement year <b>{{data.person.retirement.year}}</b> (age
+                        <b>{{data.person.retirement.age}}</b>)
+                    </h6>
+                    When you retire, your net worth will be
+                    <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>:
+                    you'll have <b>{{toDollar(data.person.retirement.investment)}}</b> in your post-tax
+                    investment accounts,
+                    <b>{{toDollar(data.person.retirement.roth)}}</b> in your Roth IRA/401k accounts, and
+                    <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in your tax deferred
+                    traditional retirement accounts.
+                    <div v-if="data.person.retirement.investment<0" class="alert alert-danger mt-3">
+                        Your current retirement plan cannot get you to <b>{{data.person.retirement.age}}</b>,
+                        your post-tax balance will be
+                        <b>{{toDollar(data.person.retirement.investment)}}</b>,
+                        try adjusting your retirement plan!
                     </div>
+
+                    After retirement, all your spending, including taxes that you
+                    need to pay
+                    will come from your post-tax investment account until you reach the age of
+                    <b>{{data.noPenaltyWithdraw.age}}</b>,
+                    which means that you'll need to pay capital gain taxes for the amount drawn.
+                    <div class="alert">Note: the calculation assumes 50% withdraws from post-tax investment
+                        accounts are capital gains<br />
+                        Note: For ease of calculation, age 60 is used, instead of 59.5</div>
+                </div>
+                <hr />
+
+                <div id="divWithdrawLogic" class="mt-3">
+                    <h6>Penalty free withdraw year <b>{{data.noPenaltyWithdraw.year}}</b>
+                        (age <b>{{data.noPenaltyWithdraw.age}}</b>)
+                    </h6>
+                    <div class="mt-3">
+                        After you've reached the age of <b>{{data.noPenaltyWithdraw.age}}</b> (59.5),
+                        your net worth will be
+                        <b>{{toDollar(data.noPenaltyWithdraw.roth+data.noPenaltyWithdraw.pretaxBalance+data.noPenaltyWithdraw.investment)}}</b>:
+                        you'll have <b
+                            :class="{'negative':data.noPenaltyWithdraw.investment<0}">{{toDollar(data.noPenaltyWithdraw.investment)}}</b>
+                        in your post-tax investment account,
+                        <b>{{toDollar(data.noPenaltyWithdraw.roth)}}</b> in your Roth IRA/401k accounts, and
+                        <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in your tax deferred
+                        traditional retirement accounts.
+                        <br />
+                        You can start
+                        withdrawing funds from pretax accounts without penalty,
+                        however, you'll pay ordinary income tax for the withdraws.
+                        At this time, instead of selling investments from post-tax accounts to cover taxes and
+                        spending, the funds
+                        should come from your pretax accounts. The step-up rule allows you to pass down your
+                        brokerage investment balance to your heir without incurring capital gain tax.
+                    </div>
+                    <div v-if="data.noPenaltyWithdraw.investment<0" class="alert alert-danger mt-3">
+                        Your current retirement plan cannot get you through
+                        <b>{{data.noPenaltyWithdraw.age}}</b>
+                        where you can withdraw from pretax accounts without penalty.
+                        Your post-tax savings is <b>{{toDollar(data.noPenaltyWithdraw.investment)}}</b>,
+                        You have <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in pretax accounts,
+                        consider adjusting your plan, or look into "55 rule" or "72t" for early withdraw.
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6>Social Security benefit starting year <b>{{data.person.ss.year}}</b>
+                        (age <b>{{data.person.ss.age}}</b>)</h6>
+
+                    You indicated that you want to start receiving the social security benefit at the age of
+                    <b>{{data.person.ss.age}}</b>, and the monthly benefit will be
+                    <b>{{toDollar(data.person.ss.perMonth)}}</b>.
+                </div>
+                <hr />
+
+                <div class="mt-3">
+                    <h6>Required Minimum Distribution year <b>{{data.rmd.year}}</b> (age
+                        <b>{{data.rmd.age}})</b>
+                    </h6>
+                    Your pretax retirement accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>
+                    <div class="alert" v-if="data.rmd.pretaxBalance<500000">Good Job</div>
+                    <div class="alert" v-if="data.rmd.pretaxBalance>500000">You'll be required to take out
+                        <b>{{toDollar(data.rmd.rmd)}}</b> from your pretax accounts this year, your
+                        estimated
+                        tax bill
+                        will be
+                        <b class="negative">{{toDollar(data.rmd.tax)}}</b> for withdraw amount of
+                        <b>{{toDollar(data.rmd.dist)}}</b>.
+                    </div>
+                </div>
+                <hr />
+
+                <div class="mt-3">
+                    <h6>End of life year <b>{{data.person.deceased.year}}</b> (age
+                        <b>{{data.person.deceased.age}}</b>)
+                    </h6>
+                    When you die, your net worth will be
+                    <b>{{toDollar(data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment)}}</b>:
+
+                    you'll have <b>{{toDollar(data.person.deceased.investment)}}</b> in your post-tax
+                    investment accounts,
+                    <b>{{toDollar(data.person.deceased.roth)}}</b> in your Roth IRA/401k accounts, and
+                    <b>{{toDollar(data.person.deceased.pretaxBalance)}}</b> in your tax deferred
+                    traditional retirement accounts.
+                </div>
+                <hr />
+
+                <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how
+                    much taxes you will pay.
                 </div>
             </div>
         </div>
