@@ -1393,13 +1393,21 @@
                     { percent: 35, income: 693750 },
                     { percent: 37, income: 1000000 }
                 ];
+                const b2025Data = [
+                    { percent: 12, income: 96950 },
+                    { percent: 22, income: 206700 },
+                    { percent: 24, income: 394600 },
+                    { percent: 32, income: 501050 },
+                    { percent: 35, income: 751600 },
+                    { percent: 37, income: 1000000 }
+                ];
                 const b2024 = this.data.tax.brackets.find(x => x.year === 2024);
                 b2024.data = b2024Data;
                 b2024.standardDeduction = 29200;
-                const b2025Data = b2024Data.map(x => { return { percent: x.percent, income: Math.round(x.income * (1 + r)) } });
+
                 const b2025 = this.data.tax.brackets.find(x => x.year === 2025);
                 b2025.data = b2025Data;
-                b2025.standardDeduction = 29200 * (1 + r);
+                b2025.standardDeduction = 30000;
                 return this.data.tax.brackets.find(x => x.year === year);
             },
             /**
