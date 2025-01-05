@@ -574,8 +574,7 @@
                                         no FICA on capital gains or roth conversion.</li>
                                     <li>Medicare Surtax 3.8% on Capital Gain for MAGI over $250,000.</li>
                                     <li>State Taxes allows different taxes for before and after retirement.</li>
-                                    <li>Standard deduction for 65+ is increased by 1550 per person in 2024, an increase
-                                        of 3.3% from 2023.</li>
+                                    <li>Long-term capital gains can't push you into a higher tax bracket</li>
                                 </ul>
                             </div>
                             <div class="mt-3">
@@ -750,9 +749,7 @@
                             <summary>Projected Tax Rates</summary>
                             <div class="row">
                                 Calculated with historical 1.7% increase in bracket ceilings each year, and accounted
-                                for
-                                2024-2025
-                                trump tax brackets.
+                                for 2025 trump tax (Tax Cuts and Jobs Act) brackets.
                                 <table class="table table-hover table-strip">
                                     <thead>
                                         <tr>
@@ -1260,9 +1257,9 @@
 
             getCapitalGain0TaxCeiling(year) {
                 const ceilingInreaseRate = 0.045; // using ssrCeilingInreaseRate
-                const ceiling2024 = 94050;
-                let newCeiling = ceiling2024;
-                for (let i = 0; i < year - 2024; i++) {
+                const ceiling2025 = 96700;
+                let newCeiling = ceiling2025;
+                for (let i = 0; i < year - 2025; i++) {
                     newCeiling = newCeiling * (1 + ceilingInreaseRate);
                 }
                 return newCeiling;
@@ -1309,18 +1306,18 @@
                 const ceilingIncreaseRate = 0.039; // average of last 5 years
 
                 // ceiling increase rate ~3.9%
-                //premium2024
-                const premium2024 = [
-                    { ceiling: 206000, monthly: 174.7 },
-                    { ceiling: 258000, monthly: 244.6 },
-                    { ceiling: 322000, monthly: 349.4 },
-                    { ceiling: 386000, monthly: 454.2 },
-                    { ceiling: 750000, monthly: 559.00 },
-                    { ceiling: 1000000, monthly: 594.00 }
+                //premium2025
+                const premium2025 = [
+                    { ceiling: 212000, monthly: 185 },
+                    { ceiling: 266000, monthly: 259 },
+                    { ceiling: 344000, monthly: 370 },
+                    { ceiling: 400000, monthly: 480.9 },
+                    { ceiling: 750000, monthly: 591.9 },
+                    { ceiling: 1000000, monthly: 628.9 }
                 ];
                 this.data.medicare.premiums.push({
-                    year: 2024,
-                    data: premium2024
+                    year: 2025,
+                    data: premium2025
                 });
 
                 const deceaseYear = (new Date()).getFullYear() + (this.data.person.deceased.age - this.data.person.age);
@@ -1361,7 +1358,7 @@
                     ]
                 }
                 this.data.tax.brackets = [b2017];
-                let extra65standardDeduction = 3010;  // 2024 extra was 3010, it will get adjusted at the same rate as tax brackets
+                let extra65standardDeduction = 3100;  // 2025 extra was 3100, it will get adjusted at the same rate as tax brackets
                 for (let i = 2018; i < 2018 + this.data.person.deceased.age; i++) {
                     const newdata = this.data.tax.brackets[this.data.tax.brackets.length - 1].data.map(
                         x => { return { percent: x.percent, income: Math.round(x.income * (1 + r)) } }
@@ -1370,7 +1367,7 @@
 
                     // if 65, add 65 extra standard deduction for one year, then following years will be based on 65
                     const age = this.data.person.age + (year - (new Date().getFullYear()));
-                    if (i > 2024 & age <= 65) {
+                    if (i > 2025 & age <= 65) {
                         extra65standardDeduction *= (1 + r);
                         if (age === 65) {
                             standardDeduction += extra65standardDeduction;
@@ -1385,14 +1382,6 @@
                 }
 
                 // 2024-2025 = trump tax rate
-                const b2024Data = [
-                    { percent: 12, income: 89450 },
-                    { percent: 22, income: 190750 },
-                    { percent: 24, income: 364200 },
-                    { percent: 32, income: 462500 },
-                    { percent: 35, income: 693750 },
-                    { percent: 37, income: 1000000 }
-                ];
                 const b2025Data = [
                     { percent: 12, income: 96950 },
                     { percent: 22, income: 206700 },
@@ -1401,9 +1390,6 @@
                     { percent: 35, income: 751600 },
                     { percent: 37, income: 1000000 }
                 ];
-                const b2024 = this.data.tax.brackets.find(x => x.year === 2024);
-                b2024.data = b2024Data;
-                b2024.standardDeduction = 29200;
 
                 const b2025 = this.data.tax.brackets.find(x => x.year === 2025);
                 b2025.data = b2025Data;
@@ -1469,11 +1455,11 @@
                 return fica;
             },
             getFica_SSTaxCeiling(year) {
-                const ssrCeiling2024 = 168600;       // fica is calculated up to this number
+                const ssrCeiling2025 = 176100;       // fica is calculated up to this number
                 const ssrCeilingInreaseRate = 0.045; // average from last 8 years
 
-                let sum = ssrCeiling2024;
-                for (let i = 0; i < year - 2024; i++) {
+                let sum = ssrCeiling2025;
+                for (let i = 0; i < year - 2025; i++) {
                     sum = sum * (1 + ssrCeilingInreaseRate);
                 }
                 return sum;
