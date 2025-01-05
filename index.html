@@ -1321,7 +1321,7 @@
                 });
 
                 const deceaseYear = (new Date()).getFullYear() + (this.data.person.deceased.age - this.data.person.age);
-                for (let i = 2025; i < deceaseYear; i++) {
+                for (let i = this.data.medicare.premiums[0].year + 1; i < deceaseYear; i++) {
                     const previousPremium = this.data.medicare.premiums.find(x => x.year == i - 1).data;
                     const newPremium = previousPremium.map(x => { return { ceiling: x.ceiling * (1 + ceilingIncreaseRate), monthly: x.monthly * (1 + premiumIncreaseRate) } });
                     this.data.medicare.premiums.push({
@@ -1382,6 +1382,14 @@
                 }
 
                 // 2024-2025 = trump tax rate
+                const b2024Data = [
+                    { percent: 12, income: 89450 },
+                    { percent: 22, income: 190750 },
+                    { percent: 24, income: 364200 },
+                    { percent: 32, income: 462500 },
+                    { percent: 35, income: 693750 },
+                    { percent: 37, income: 1000000 }
+                ];
                 const b2025Data = [
                     { percent: 12, income: 96950 },
                     { percent: 22, income: 206700 },
@@ -1390,6 +1398,9 @@
                     { percent: 35, income: 751600 },
                     { percent: 37, income: 1000000 }
                 ];
+                const b2024 = this.data.tax.brackets.find(x => x.year === 2024);
+                b2024.data = b2024Data;
+                b2024.standardDeduction = 29200;
 
                 const b2025 = this.data.tax.brackets.find(x => x.year === 2025);
                 b2025.data = b2025Data;
