@@ -464,18 +464,6 @@
                                 <input id="distribution.age" class="form-control" v-model="data.distribution.age"
                                     type="number" min="40" step="1" @change="calculate" />
                             </div>
-                            <div class="col-4" v-show="data.distribution.year <= 2025">
-                                <label for="distribution.braket2025"
-                                    title="Projected retirement age tax brackets shown">Conversion based on tax
-                                    bracket for <b>year 2025</b></label>
-                                <select id="distribution.braket2025" @change="calculate" class="form-select"
-                                    v-model="data.distribution.bracket2025">
-                                    <option value="0">0%</option>
-                                    <option v-for="b in getTaxBracketsForYear(data.distribution.year).data"
-                                        :value="b.percent">{{b.percent}}% -
-                                        {{toDollar(b.income)}}</option>
-                                </select>
-                            </div>
                             <div class="col-4">
                                 <label for="distribution.braket"
                                     title="Projected retirement age tax brackets shown">Conversion based on tax
@@ -483,11 +471,15 @@
                                 <select id="distribution.braket" @change="calculate" class="form-select"
                                     v-model="data.distribution.bracket">
                                     <option value="0">0%</option>
-                                    <option
-                                        v-for="b in getTaxBracketsForYear(data.distribution.year<=2025?data.distribution.year+1:data.distribution.year).data"
+                                    <option v-for="b in getTaxBracketsForYear(data.distribution.year).data"
                                         :value="b.percent">{{b.percent}}% -
                                         {{toDollar(b.income)}}</option>
                                 </select>
+                            </div>
+                            <div class="col-4">
+                                <label for="distribution.offset" title="">- or + $ amount from the bracket</label>
+                                <input id="distribution.offset" @change="calculate" class="form-control" type="number"
+                                    step="1000" v-model="data.distribution.offset" />
                             </div>
                         </div>
                         <div class="mt-3">
@@ -906,7 +898,12 @@
         data() {
 
             let savedData = JSON.parse(localStorage.getItem("data"));
-            if (savedData) return { data: savedData };
+            if (savedData) {
+                savedData.tax.brackets = [];
+                savedData.medicare.premiums = [];
+                savedData.yearlyData = [];
+                return { data: savedData };
+            }
 
             // lifetimetable used to calculate how much rmd for age
             // https://www.irs.gov/publications/p590b#en_US_2021_publink100090093
@@ -915,6 +912,8 @@
                 [83, 17.7], [84, 16.8], [85, 16], [86, 15.2], [87, 14.4], [88, 13.7], [89, 12.9], [90, 12.2], [91, 11.5], [92, 10.8],
                 [93, 10.1], [94, 9.5], [95, 8.9], [96, 8.4], [97, 7.8], [98, 7.3], [99, 6.8], [100, 6.4]
             ];
+
+            // initial data
             return {
                 data: {
                     columns: {
@@ -925,7 +924,7 @@
                     yearlyData: [],
                     spending: { beforeRetirement: 80000, afterRetirement: 70000, insurance: 20000 },
                     annualReturn: { beforeRetirement: 12, afterRetirement: 6 },
-                    distribution: { age: 60, amount: 0, bracket: 15, bracket2025: 0 },
+                    distribution: { age: 60, amount: 0, bracket: 15 },
                     noPenaltyWithdraw: { age: 60 },
                     inflation: 3.0,
                     meritIncrease: 2,
@@ -1062,14 +1061,15 @@
                     //** calculate how much to convert
                     let dist = 0;
                     if (pretaxBalance > 0 && age >= this.data.distribution.age) {
-                        const bracket = year <= 2025 ? this.data.distribution.bracket2025 : this.data.distribution.bracket;
-                        const totalDistAllowed = this.getIncomeForBracketAndYear(year, bracket) - taxableOrdinaryIncome;
+                        const bracket = this.data.distribution.bracket;
+                        const totalDistAllowed = this.getIncomeForBracketAndYear(year, bracket) - taxableOrdinaryIncome + this.data.distribution.offset;
                         if (pretaxBalance < totalDistAllowed) {
                             dist = pretaxBalance;
                         } else {
                             dist = totalDistAllowed;
                         }
 
+                        // dist += this.data.distribution.offset;
                         // if rmd is greater than calculated distribution amount, then take out RMD
                         dist = rmd > dist ? rmd : dist;
 
@@ -1279,11 +1279,8 @@
             },
             getMedicarePremiumsByMagi(magi, year) {
                 const premiums = this.getMedicarePremiumsForYear(year);
-                if (premiums == undefined) {
-                    this.estimateMedicarePremiumsforAllYears(); // deceased year might have changed, estimate again
-                    return this.getMedicarePremiumsByMagi(magi, year);
-                }
-                const premium = premiums.data[0].monthly;
+
+                let premium = premiums.data[0].monthly;
                 for (let p of premiums.data) {
                     if (magi >= p.ceiling) {
                         premium = p.monthly;
@@ -1332,34 +1329,39 @@
                 console.log('medicare premiums: ', this.data.medicare.premiums);
             },
             getTaxBracketsForYear(year) {
+                this.calculateTaxBracketsForAllYear(year);
                 try {
-                    if (this.data.tax.brackets && this.data.tax.brackets.length !== 0) {
-                        return this.data.tax.brackets.find(x => x.year === year);
-                    }
+                    return this.data.tax.brackets.find(x => x.year === year);
                 } catch (ex) {
                     console.error('year=', year, 'ex=', ex);
+                }
+            },
+            calculateTaxBracketsForAllYear(year) {
+                if (this.data.tax.brackets && this.data.tax.brackets.length !== 0) {
+                    return;
                 }
 
                 // historical yearly bracket increase around 1.6% in from 2007-2017
                 const r = 0.016;
 
-                // 2018 has diff tax bracket
-                const b2017 = {
-                    year: 2017,
-                    standardDeduction: 12700,
-                    data: [
-                        { percent: 10, income: 18650 },
-                        { percent: 15, income: 75900 },
-                        { percent: 25, income: 153100 },
-                        { percent: 28, income: 233350 },
-                        { percent: 33, income: 416700 },
-                        { percent: 35, income: 470000 },
-                        { percent: 39.6, income: 1000000 }
-                    ]
+                const b2025Data = [
+                    { percent: 12, income: 96950 },
+                    { percent: 22, income: 206700 },
+                    { percent: 24, income: 394600 },
+                    { percent: 32, income: 501050 },
+                    { percent: 35, income: 751600 },
+                    { percent: 37, income: 1000000 }
+                ];
+
+                const b2025 = {
+                    year: 2025,
+                    standardDeduction: 30000,
+                    data: b2025Data
                 }
-                this.data.tax.brackets = [b2017];
+
+                this.data.tax.brackets = [b2025];
                 let extra65standardDeduction = 3100;  // 2025 extra was 3100, it will get adjusted at the same rate as tax brackets
-                for (let i = 2018; i < 2018 + this.data.person.deceased.age; i++) {
+                for (let i = 2026; i < 2026 + this.data.person.deceased.age; i++) {
                     const newdata = this.data.tax.brackets[this.data.tax.brackets.length - 1].data.map(
                         x => { return { percent: x.percent, income: Math.round(x.income * (1 + r)) } }
                     );
@@ -1380,32 +1382,6 @@
                         data: newdata
                     })
                 }
-
-                // 2024-2025 = trump tax rate
-                const b2024Data = [
-                    { percent: 12, income: 89450 },
-                    { percent: 22, income: 190750 },
-                    { percent: 24, income: 364200 },
-                    { percent: 32, income: 462500 },
-                    { percent: 35, income: 693750 },
-                    { percent: 37, income: 1000000 }
-                ];
-                const b2025Data = [
-                    { percent: 12, income: 96950 },
-                    { percent: 22, income: 206700 },
-                    { percent: 24, income: 394600 },
-                    { percent: 32, income: 501050 },
-                    { percent: 35, income: 751600 },
-                    { percent: 37, income: 1000000 }
-                ];
-                const b2024 = this.data.tax.brackets.find(x => x.year === 2024);
-                b2024.data = b2024Data;
-                b2024.standardDeduction = 29200;
-
-                const b2025 = this.data.tax.brackets.find(x => x.year === 2025);
-                b2025.data = b2025Data;
-                b2025.standardDeduction = 30000;
-                return this.data.tax.brackets.find(x => x.year === year);
             },
             /**
              * returns ordinary income upper limit for given year and bracket
