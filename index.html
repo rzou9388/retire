@@ -924,7 +924,7 @@
                     yearlyData: [],
                     spending: { beforeRetirement: 80000, afterRetirement: 70000, insurance: 20000 },
                     annualReturn: { beforeRetirement: 12, afterRetirement: 6 },
-                    distribution: { age: 60, amount: 0, bracket: 15 },
+                    distribution: { age: 60, amount: 0, bracket: 15, offset: 0 },
                     noPenaltyWithdraw: { age: 60 },
                     inflation: 3.0,
                     meritIncrease: 2,
@@ -1069,7 +1069,6 @@
                             dist = totalDistAllowed;
                         }
 
-                        // dist += this.data.distribution.offset;
                         // if rmd is greater than calculated distribution amount, then take out RMD
                         dist = rmd > dist ? rmd : dist;
 
