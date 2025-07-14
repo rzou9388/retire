@@ -192,12 +192,12 @@
                             <div class="col-4 ">
                                 <label for="txtAge">Current Age:</label>
                                 <input id="txtAge" class="form-control" v-model="data.person.age" step="1" type="number"
-                                    @change="calculate" max="100" />
+                                    @change="recalculate" max="100" />
                             </div>
                             <div class="col-4">
                                 <label for="data.person.retirement.age">Retirement Age:</label>
                                 <input id="data.person.retirement.age" class="form-control"
-                                    v-model="data.person.retirement.age" step="1" type="number" @change="calculate" />
+                                    v-model="data.person.retirement.age" step="1" type="number" @change="recalculate" />
                             </div>
                             <div class="col-4">
                                 <label for="txtYears">Retire In Years:</label>
@@ -222,12 +222,12 @@
                             <div class="col-4">
                                 <label for="person.ss.age">Social Security Benefit Age (62-70):</label>
                                 <input id="person.ss.age" class="form-control" v-model="data.person.ss.age"
-                                    type="number" @change="calculate" min="62" max="70" />
+                                    type="number" @change="recalculate" min="62" max="70" />
                             </div>
                             <div class="col-4">
                                 <label for="person.deceased.age">Life Expectancy (Age):</label>
                                 <input id="person.deceased.age" class="form-control" v-model="data.person.deceased.age"
-                                    type="number" @change="calculate" max="100" />
+                                    type="number" @change="recalculate" max="100" />
                             </div>
                         </div>
                         <div>
@@ -786,13 +786,12 @@
                     <h6>Retirement year <b>{{data.person.retirement.year}}</b> (age
                         <b>{{data.person.retirement.age}}</b>)
                     </h6>
-                    When you retire, your net worth will be
-                    <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>:
-                    you'll have <b>{{toDollar(data.person.retirement.investment)}}</b> in your post-tax
-                    investment accounts,
-                    <b>{{toDollar(data.person.retirement.roth)}}</b> in your Roth IRA/401k accounts, and
-                    <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b> in your tax deferred
-                    traditional retirement accounts.
+                    <pre>
+    net worth:              <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>
+    investment (posttax):   <b>{{toDollar(data.person.retirement.investment)}}</b>
+    Roth IRA/401k:          <b>{{toDollar(data.person.retirement.roth)}}</b>
+    IRA/401k:               <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b>
+                    </pre>
                     <div v-if="data.person.retirement.investment<0" class="alert alert-danger mt-3">
                         Your current retirement plan cannot get you to <b>{{data.person.retirement.age}}</b>,
                         your post-tax balance will be
@@ -817,14 +816,12 @@
                     </h6>
                     <div class="mt-3">
                         After you've reached the age of <b>{{data.noPenaltyWithdraw.age}}</b> (59.5),
-                        your net worth will be
-                        <b>{{toDollar(data.noPenaltyWithdraw.roth+data.noPenaltyWithdraw.pretaxBalance+data.noPenaltyWithdraw.investment)}}</b>:
-                        you'll have <b
-                            :class="{'negative':data.noPenaltyWithdraw.investment<0}">{{toDollar(data.noPenaltyWithdraw.investment)}}</b>
-                        in your post-tax investment account,
-                        <b>{{toDollar(data.noPenaltyWithdraw.roth)}}</b> in your Roth IRA/401k accounts, and
-                        <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in your tax deferred
-                        traditional retirement accounts.
+                        <pre>
+    net worth:              <b>{{toDollar(data.noPenaltyWithdraw.roth+data.noPenaltyWithdraw.pretaxBalance+data.noPenaltyWithdraw.investment)}}</b>
+    investment (posttax):   <b :class="{'negative':data.noPenaltyWithdraw.investment<0}">{{toDollar(data.noPenaltyWithdraw.investment)}}</b>
+    Roth IRA/401k:          <b>{{toDollar(data.noPenaltyWithdraw.roth)}}</b>
+    IRA/401k:               <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b>
+                    </pre>
                         <br />
                         You can start
                         withdrawing funds from pretax accounts without penalty,
@@ -874,9 +871,12 @@
                     <h6>End of life year <b>{{data.person.deceased.year}}</b> (age
                         <b>{{data.person.deceased.age}}</b>)
                     </h6>
-                    When you die, your net worth will be
-                    <b>{{toDollar(data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment)}}</b>:
-
+                    <pre>
+    net worth:              <b :class="{'negative':data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment<0}">{{toDollar(data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment)}}</b>
+    investment (posttax):   <b :class="{'negative':data.person.deceased.investment<0}">{{toDollar(data.person.deceased.investment)}}</b>
+    Roth IRA/401k:          <b :class="{'negative':data.person.deceased.roth<0}">{{toDollar(data.person.deceased.roth)}}</b>
+    IRA/401k:               <b :class="{'negative':data.person.deceased.pretaxBalance<0}">{{toDollar(data.person.deceased.pretaxBalance)}}</b>
+                    </pre>
                     you'll have <b>{{toDollar(data.person.deceased.investment)}}</b> in your post-tax
                     investment accounts,
                     <b>{{toDollar(data.person.deceased.roth)}}</b> in your Roth IRA/401k accounts, and
@@ -902,6 +902,9 @@
                 savedData.tax.brackets = [];
                 savedData.medicare.premiums = [];
                 savedData.yearlyData = [];
+                if (savedData.distribution.bracket == 15) {  // reset previous 15 before BBB
+                    savedData.distribution.bracket = 0;
+                }
                 return { data: savedData };
             }
 
@@ -924,7 +927,7 @@
                     yearlyData: [],
                     spending: { beforeRetirement: 80000, afterRetirement: 70000, insurance: 20000 },
                     annualReturn: { beforeRetirement: 12, afterRetirement: 6 },
-                    distribution: { age: 60, amount: 0, bracket: 15, offset: 0 },
+                    distribution: { age: 60, amount: 0, bracket: 12, offset: 0 },
                     noPenaltyWithdraw: { age: 60 },
                     inflation: 3.0,
                     meritIncrease: 2,
@@ -978,6 +981,13 @@
                 this.data.medicare = this.mergeYearlyDataByAge(this.data.medicare);
 
                 window.setTimeout(updateChart, 200);
+            },
+            /**
+             * recalculate when age changes
+             */
+            recalculate() {
+                this.estimateMedicarePremiumsforAllYears();
+                this.calculate();
             },
             mergeYearlyDataByAge(originalData) {
                 const oneYearData = this.data.yearlyData.find(y => y.age === originalData.age);
@@ -1296,6 +1306,7 @@
                 return premiums;
             },
             estimateMedicarePremiumsforAllYears() {
+                this.data.medicare.premiums = [];
                 //calculate part b only
                 // increase rate = 6.5%  // https://www.statista.com/statistics/1284023/annual-percentage-change-of-medicare-part-b-premium-us/
                 const premiumIncreaseRate = 0.065;
@@ -1325,12 +1336,12 @@
                         data: newPremium
                     });
                 }
-                console.log('medicare premiums: ', this.data.medicare.premiums);
             },
             getTaxBracketsForYear(year) {
                 this.calculateTaxBracketsForAllYear(year);
                 try {
-                    return this.data.tax.brackets.find(x => x.year === year);
+                    const bracket = this.data.tax.brackets.find(x => x.year === year);
+                    return bracket;
                 } catch (ex) {
                     console.error('year=', year, 'ex=', ex);
                 }
