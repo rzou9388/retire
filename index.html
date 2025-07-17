@@ -254,68 +254,91 @@
                         <div class="row">
                             <h6>Current Savings (you and spouse)</h6>
                             <div class="col-4">
-                                <label for="txtpretaxBalance" title="Traditional IRA, 401k, etc">Current Pretax Balance:
-                                    {{toDollar(data.person.pretaxBalance)}}</label>
-                                <input id="txtpretaxBalance" class="form-control" v-model="data.person.pretaxBalance"
-                                    step="100" type="number" @change="calculate" />
+                                <label for="txtpretaxBalance" title="Traditional IRA, 401k, etc">Current Pretax
+                                    Balance:</label>
+                                <div class="input-group">
+                                    <input id="txtpretaxBalance" class="form-control"
+                                        :value="toDollar(data.person.pretaxBalance)"
+                                        @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.person.pretaxBalance = Number(val); }"
+                                        type="text" step="100" @change="calculate" />
+                                </div>
                             </div>
 
                             <div class="col-4">
-                                <label for="data.person.roth">Current Roth Balance:
-                                    {{toDollar(data.person.roth)}}</label>
-                                <input id="data.person.roth" class="form-control" v-model="data.person.roth"
-                                    type="number" min="0" step="1000" @change="calculate" />
+                                <label for="data.person.roth">Current Roth Balance:</label>
+                                <div class="input-group">
+                                    <input id="data.person.roth" class="form-control"
+                                        :value="toDollar(data.person.roth)"
+                                        @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.person.roth = Number(val); }"
+                                        type="text" min="0" step="1000" @change="calculate" />
+                                </div>
                             </div>
                             <div class="col-4">
-                                <label for="data.person.investment">Current Post Tax Investment:
-                                    {{toDollar(data.person.investment)}}</label>
-                                <input id="data.person.investment" class="form-control" v-model="data.person.investment"
-                                    type="number" min="1" step="1000" @change="calculate" />
+                                <label for="data.person.investment">Current Post Tax Investment:</label>
+                                <div class="input-group">
+                                    <input id="data.person.investment" class="form-control"
+                                        :value="toDollar(data.person.investment)"
+                                        @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.person.investment = Number(val); }"
+                                        type="text" min="1" step="1000" @change="calculate" />
+                                </div>
                             </div>
                             <hr />
                             <div class="row">
                                 <h6>Salary based income and savings (you and spouse)</h6>
                                 <div class="col-4">
-                                    <label for="data.person.salary">Current Combined Salary:
-                                        {{toDollar(data.person.salary)}}</label>
-                                    <input id="data.person.salary" class="form-control" v-model="data.person.salary"
-                                        type="number" min="0" step="1000" @change="calculate" />
+                                    <label for="data.person.salary">Current Combined Salary:</label>
+                                    <div class="input-group">
+                                        <input id="data.person.salary" class="form-control"
+                                            :value="toDollar(data.person.salary)"
+                                            @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.person.salary = Number(val); }"
+                                            type="text" min="0" step="1000" @change="calculate" />
+                                    </div>
                                 </div>
                                 <div class="col-4">
-                                    <label for="data.meritIncrease">Merit Increase:
-                                        {{toPercent(data.meritIncrease)}}</label>
-                                    <input id="data.meritIncrease" class="form-control" v-model="data.meritIncrease"
-                                        type="number" min="1" step="1" @change="calculate" />
+                                    <label for="data.meritIncrease">Merit Increase:</label>
+                                    <div class="input-group">
+                                        <input id="data.meritIncrease" class="form-control" v-model="data.meritIncrease"
+                                            type="number" min="1" step="1" @change="calculate" />
+                                        <span class="input-group-text">%</span>
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="col-4">
-                                <label for="contrib.employeePercent">Employee 401k Contribution:
-                                    {{toPercent(data.contrib.employeePercent)}}</label>
-                                <input id="contrib.employeePercent" class="form-control"
-                                    v-model="data.contrib.employeePercent" type="number" min="1" step="1"
-                                    @change="calculate" />
+                                <label for="contrib.employeePercent">Employee 401k Contribution:</label>
+                                <div class="input-group">
+                                    <input id="contrib.employeePercent" class="form-control"
+                                        v-model="data.contrib.employeePercent" type="number" min="1" step="1"
+                                        @change="calculate" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                             <div class="col-4">
-                                <label for="contrib.roth401kPercent">Employee <b>Roth</b> 401k Contribution:
-                                    {{toPercent(data.contrib.roth401kPercent)}}</label>
-                                <input id="contrib.roth401kPercent" class="form-control"
-                                    v-model="data.contrib.roth401kPercent" type="number" min="1" step="1"
-                                    @change="calculate" />
+                                <label for="contrib.roth401kPercent">Employee <b>Roth</b> 401k Contribution:</label>
+                                <div class="input-group">
+                                    <input id="contrib.roth401kPercent" class="form-control"
+                                        v-model="data.contrib.roth401kPercent" type="number" min="1" step="1"
+                                        @change="calculate" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                             <div class="col-4">
-                                <label for="contrib.employerPercent">Employer 401k Match:
-                                    {{toPercent(data.contrib.employerPercent)}}</label>
-                                <input id="contrib.employerPercent" class="form-control"
-                                    v-model="data.contrib.employerPercent" type="number" min="0" step="1"
-                                    @change="calculate" />
+                                <label for="contrib.employerPercent">Employer 401k Match:</label>
+                                <div class="input-group">
+                                    <input id="contrib.employerPercent" class="form-control"
+                                        v-model="data.contrib.employerPercent" type="number" min="0" step="1"
+                                        @change="calculate" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                             <div class="col-4">
-                                <label for="contrib.employerMatchUpTo">Employer 401k Match Up To:
-                                    {{toPercent(data.contrib.employerMatchUpTo)}}</label>
-                                <input id="contrib.employerMatchUpTo" class="form-control"
-                                    v-model="data.contrib.employerMatchUpTo" type="number" min="0" max="10" step="1"
-                                    @change="calculate" />
+                                <label for="contrib.employerMatchUpTo">Employer 401k Match Up To:</label>
+                                <div class="input-group">
+                                    <input id="contrib.employerMatchUpTo" class="form-control"
+                                        v-model="data.contrib.employerMatchUpTo" type="number" min="0" max="10" step="1"
+                                        @change="calculate" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                         </div>
                         <hr />
@@ -329,10 +352,13 @@
                                     type="number" @change="calculate" min="62" max="70" />
                             </div>
                             <div class="col-4">
-                                <label for="data.person.ss.perMonth">Monthly Benefit Amount:
-                                    {{toDollar(data.person.ss.perMonth)}}</label>
-                                <input id="data.person.ss.perMonth" class="form-control"
-                                    v-model="data.person.ss.perMonth" type="number" step="100" @change="calculate" />
+                                <label for="data.person.ss.perMonth">Monthly Benefit Amount:</label>
+                                <div class="input-group">
+                                    <input id="data.person.ss.perMonth" class="form-control"
+                                        :value="toDollar(data.person.ss.perMonth)"
+                                        @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.person.ss.perMonth = Number(val); }"
+                                        type="text" step="100" @change="calculate" />
+                                </div>
                             </div>
                             <div class="alert alert-warning">Current calculation assumes a single combined social
                                 security benefit.</div>
@@ -341,18 +367,22 @@
                         <div class="row">
                             <h6>Rate of return</h6>
                             <div class="col-4">
-                                <label for="annualReturn.beforeRetirement">Annual Return Before Retirement:
-                                    {{toPercent(data.annualReturn.beforeRetirement)}}</label>
-                                <input id="annualReturn.beforeRetirement" class="form-control"
-                                    v-model="data.annualReturn.beforeRetirement" type="number" min="1" step="1"
-                                    @change="calculate" />
+                                <label for="annualReturn.beforeRetirement">Annual Return Before Retirement:</label>
+                                <div class="input-group">
+                                    <input id="annualReturn.beforeRetirement" class="form-control"
+                                        v-model="data.annualReturn.beforeRetirement" type="number" min="1" step="1"
+                                        @change="calculate" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                             <div class="col-4">
-                                <label for="annualReturn.afterRetirement">Annual Return After Retirement:
-                                    {{toPercent(data.annualReturn.afterRetirement)}}</label>
-                                <input id="annualReturn.afterRetirement" class="form-control"
-                                    v-model="data.annualReturn.afterRetirement" type="number" min="1" step="1"
-                                    @change="calculate" />
+                                <label for="annualReturn.afterRetirement">Annual Return After Retirement:</label>
+                                <div class="input-group">
+                                    <input id="annualReturn.afterRetirement" class="form-control"
+                                        v-model="data.annualReturn.afterRetirement" type="number" min="1" step="1"
+                                        @change="calculate" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                         </div>
                         <hr />
@@ -392,29 +422,32 @@
                         <div>
                             <div class="row">
                                 <div class="col-4">
-                                    <label for="data.spending.beforeRetirement">Yearly (Before Retirement)
-                                        {{toDollar(data.spending.beforeRetirement)}}
-                                    </label>
-                                    <input id="data.spending.beforeRetirement" class="form-control"
-                                        v-model="data.spending.beforeRetirement" type="number" step="10000"
-                                        @change="calculate" />
+                                    <label for="data.spending.beforeRetirement">Yearly (Before Retirement)</label>
+                                    <div class="input-group">
+                                        <input id="data.spending.beforeRetirement" class="form-control"
+                                            :value="toDollar(data.spending.beforeRetirement)"
+                                            @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.spending.beforeRetirement = Number(val); }"
+                                            type="text" step="10000" @change="calculate" />
+                                    </div>
                                 </div>
                                 <div class="col-4">
-                                    <label for="data.spending.afterRetirement">Yearly (After Retirement)
-                                        {{toDollar(data.spending.afterRetirement)}}
-                                    </label>
-                                    <input id="data.spending.afterRetirement" class="form-control"
-                                        v-model="data.spending.afterRetirement" type="number" step="10000"
-                                        @change="calculate" />
+                                    <label for="data.spending.afterRetirement">Yearly (After Retirement)</label>
+                                    <div class="input-group">
+                                        <input id="data.spending.afterRetirement" class="form-control"
+                                            :value="toDollar(data.spending.afterRetirement)"
+                                            @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.spending.afterRetirement = Number(val); }"
+                                            type="text" step="10000" @change="calculate" />
+                                    </div>
                                 </div>
                                 <div class="col-4">
                                     <label for="data.spending.insurance">Yearly Retirement Health Insurance (Before
-                                        Medicare)
-                                        {{toDollar(data.spending.insurance)}}
-                                    </label>
-                                    <input id="data.spending.insurance" class="form-control"
-                                        v-model="data.spending.insurance" type="number" step="1000"
-                                        @change="calculate" />
+                                        Medicare)</label>
+                                    <div class="input-group">
+                                        <input id="data.spending.insurance" class="form-control"
+                                            :value="toDollar(data.spending.insurance)"
+                                            @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.spending.insurance = Number(val); }"
+                                            type="text" step="1000" @change="calculate" />
+                                    </div>
                                 </div>
                                 <div>
                                     Your estimated yearly spending <b>before</b> retirement is
@@ -478,8 +511,12 @@
                             </div>
                             <div class="col-4">
                                 <label for="distribution.offset" title="">- or + $ amount from the bracket</label>
-                                <input id="distribution.offset" @change="calculate" class="form-control" type="number"
-                                    step="1000" v-model="data.distribution.offset" />
+                                <div class="input-group">
+                                    <input id="distribution.offset" class="form-control"
+                                        :value="toDollar(data.distribution.offset)"
+                                        @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.distribution.offset = Number(val); }"
+                                        type="text" step="1000" @change="calculate" />
+                                </div>
                             </div>
                         </div>
                         <div class="mt-3">
@@ -532,25 +569,30 @@
                     <div class="tab-pane fade" id="nav-taxes" role="tabpanel">
                         <div class="row">
                             <div class="col-4">
-                                <label for="data.tax.state.beforeRetirement">State Tax (Before Retirement)
-                                    {{toPercent(data.tax.state.beforeRetirement)}}
-                                </label>
-                                <input id="data.tax.state.beforeRetirement" class="form-control"
-                                    v-model="data.tax.state.beforeRetirement" type="number" min="0" step="1"
-                                    @change="calculate" />
+                                <label for="data.tax.state.beforeRetirement">State Tax (Before Retirement)</label>
+                                <div class="input-group">
+                                    <input id="data.tax.state.beforeRetirement" class="form-control"
+                                        v-model="data.tax.state.beforeRetirement" type="number" min="0" step="1"
+                                        @change="calculate" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                             <div class="col-4">
-                                <label for="data.tax.state.afterRetirement">State Tax (After Retirement)
-                                    {{toPercent(data.tax.state.afterRetirement)}}
-                                </label>
-                                <input id="data.tax.state.afterRetirement" class="form-control"
-                                    v-model="data.tax.state.afterRetirement" type="number" min="0" step="1"
-                                    @change="calculate" />
+                                <label for="data.tax.state.afterRetirement">State Tax (After Retirement)</label>
+                                <div class="input-group">
+                                    <input id="data.tax.state.afterRetirement" class="form-control"
+                                        v-model="data.tax.state.afterRetirement" type="number" min="0" step="1"
+                                        @change="calculate" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                             <div class="col-4">
-                                <label for="inflation">Inflation {{toPercent(data.inflation)}}</label>
-                                <input id="inflation" class="form-control" v-model="data.inflation" type="number"
-                                    step="1" @change="calculate" />
+                                <label for="inflation">Inflation</label>
+                                <div class="input-group">
+                                    <input id="inflation" class="form-control" v-model="data.inflation" type="number"
+                                        step="1" @change="calculate" />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                         </div>
                         <div>
@@ -565,7 +607,7 @@
                                         $250,000;
                                         no FICA on capital gains or roth conversion.</li>
                                     <li>Medicare Surtax 3.8% on Capital Gain for MAGI over $250,000.</li>
-                                    <li>State Taxes allows different taxes for before and after retirement.</li>
+                                    <li>State Tax inputs allows different taxes for before and after retirement.</li>
                                     <li>Long-term capital gains can't push you into a higher tax bracket</li>
                                 </ul>
                             </div>
@@ -770,7 +812,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-5">
+            <div class="col-5 overflow-auto">
                 <h4>Summary</h4>
                 <div id="chartParent" style="height:450px;display:none"></div>
                 <div id="divCurrentYear" class="mt-3">
@@ -1278,6 +1320,8 @@
                 return new Intl.NumberFormat("en-US", {
                     style: "currency",
                     currency: "USD",
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
                 }).format(val);
             },
             toPercent(val) {
@@ -1469,8 +1513,9 @@
                 console.error(ex);
             }
         }
-    }).mount("#app");
+    });
     app.config.globalProperties.window = window;
+    app.mount("#app");
 </script>
 <details>
     <summary>TODOs</summary>
