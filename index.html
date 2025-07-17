@@ -514,7 +514,7 @@
                                 <div class="input-group">
                                     <input id="distribution.offset" class="form-control"
                                         :value="toDollar(data.distribution.offset)"
-                                        @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.distribution.offset = Number(val); }"
+                                        @input="e => { let val = e.target.value.replace(/[^\d.-]/g, ''); data.distribution.offset = Number(val); }"
                                         type="text" step="1000" @change="calculate" />
                                 </div>
                             </div>
@@ -816,18 +816,14 @@
                 <h4>Summary</h4>
                 <div id="chartParent" style="height:450px;display:none"></div>
                 <div id="divCurrentYear" class="mt-3">
-                    <h6>Current year <b>{{new Date().getFullYear()}}</b> (age
-                        <b>{{data.person.age}}</b>)
-                    </h6>
+                    <h6>Current year <b>{{new Date().getFullYear()}}</b> (age <b>{{data.person.age}}</b>)</h6>
                     Your current net worth is
                     (<b>{{toDollar(data.person.roth+data.person.investment+data.person.pretaxBalance)}}</b>.)
-
                 </div>
                 <hr />
                 <div id="divRetirementYear">
                     <h6>Retirement year <b>{{data.person.retirement.year}}</b> (age
-                        <b>{{data.person.retirement.age}}</b>)
-                    </h6>
+                        <b>{{data.person.retirement.age}}</b>)</h6>
                     <pre>
     net worth:              <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>
     investment (posttax):   <b>{{toDollar(data.person.retirement.investment)}}</b>
@@ -835,27 +831,20 @@
     IRA/401k:               <b>{{toDollar(data.person.retirement.pretaxBalance)}}</b>
                     </pre>
                     <div v-if="data.person.retirement.investment<0" class="alert alert-danger mt-3">
-                        Your current retirement plan cannot get you to <b>{{data.person.retirement.age}}</b>,
-                        your post-tax balance will be
-                        <b>{{toDollar(data.person.retirement.investment)}}</b>,
-                        try adjusting your retirement plan!
+                        Your current retirement plan cannot get you to <b>{{data.person.retirement.age}}</b>, your
+                        post-tax balance will be <b>{{toDollar(data.person.retirement.investment)}}</b>, try adjusting
+                        your retirement plan!
                     </div>
-
-                    After retirement, all your spending, including taxes that you
-                    need to pay
-                    will come from your post-tax investment account until you reach the age of
-                    <b>{{data.noPenaltyWithdraw.age}}</b>,
-                    which means that you'll need to pay capital gain taxes for the amount drawn.
-                    <div class="alert">Note: the calculation assumes 50% withdraws from post-tax investment
-                        accounts are capital gains<br />
-                        Note: For ease of calculation, age 60 is used, instead of 59.5</div>
+                    After retirement, all your spending, including taxes that you need to pay will come from your
+                    post-tax investment account until you reach the age of <b>{{data.noPenaltyWithdraw.age}}</b>, which
+                    means that you'll need to pay capital gain taxes for the amount drawn.
+                    <div class="alert">Note: the calculation assumes 50% withdraws from post-tax investment accounts are
+                        capital gains<br />Note: For ease of calculation, age 60 is used, instead of 59.5</div>
                 </div>
                 <hr />
-
                 <div id="divWithdrawLogic" class="mt-3">
-                    <h6>Penalty free withdraw year <b>{{data.noPenaltyWithdraw.year}}</b>
-                        (age <b>{{data.noPenaltyWithdraw.age}}</b>)
-                    </h6>
+                    <h6>Penalty free withdraw year <b>{{data.noPenaltyWithdraw.year}}</b> (age
+                        <b>{{data.noPenaltyWithdraw.age}}</b>)</h6>
                     <div class="mt-3">
                         After you've reached the age of <b>{{data.noPenaltyWithdraw.age}}</b> (59.5),
                         <pre>
@@ -863,55 +852,36 @@
     investment (posttax):   <b :class="{'negative':data.noPenaltyWithdraw.investment<0}">{{toDollar(data.noPenaltyWithdraw.investment)}}</b>
     Roth IRA/401k:          <b>{{toDollar(data.noPenaltyWithdraw.roth)}}</b>
     IRA/401k:               <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b>
-                    </pre>
+                        </pre>
                         <br />
-                        You can start
-                        withdrawing funds from pretax accounts without penalty,
-                        however, you'll pay ordinary income tax for the withdraws.
-                        At this time, instead of selling investments from post-tax accounts to cover taxes and
-                        spending, the funds
-                        should come from your pretax accounts. The step-up rule allows you to pass down your
-                        brokerage investment balance to your heir without incurring capital gain tax.
+                        You can start withdrawing funds from pretax accounts without penalty, however, you'll pay
+                        ordinary income tax for the withdraws. At this time, instead of selling investments from
+                        post-tax accounts to cover taxes and spending, the funds should come from your pretax accounts.
+                        The step-up rule allows you to pass down your brokerage investment balance to your heir without
+                        incurring capital gain tax.
                     </div>
                     <div v-if="data.noPenaltyWithdraw.investment<0" class="alert alert-danger mt-3">
-                        Your current retirement plan cannot get you through
-                        <b>{{data.noPenaltyWithdraw.age}}</b>
-                        where you can withdraw from pretax accounts without penalty.
-                        Your post-tax savings is <b>{{toDollar(data.noPenaltyWithdraw.investment)}}</b>,
-                        You have <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in pretax accounts,
-                        consider adjusting your plan, or look into "55 rule" or "72t" for early withdraw.
+                        Your current retirement plan cannot get you through <b>{{data.noPenaltyWithdraw.age}}</b> where
+                        you can withdraw from pretax accounts without penalty. Your post-tax savings is
+                        <b>{{toDollar(data.noPenaltyWithdraw.investment)}}</b>, You have
+                        <b>{{toDollar(data.noPenaltyWithdraw.pretaxBalance)}}</b> in pretax accounts, consider adjusting
+                        your plan, or look into "55 rule" or "72t" for early withdraw.
                     </div>
                 </div>
-                <div class="mt-3">
-                    <h6>Social Security benefit starting year <b>{{data.person.ss.year}}</b>
-                        (age <b>{{data.person.ss.age}}</b>)</h6>
-
-                    You indicated that you want to start receiving the social security benefit at the age of
-                    <b>{{data.person.ss.age}}</b>, and the monthly benefit will be
-                    <b>{{toDollar(data.person.ss.perMonth)}}</b>.
-                </div>
                 <hr />
-
                 <div class="mt-3">
-                    <h6>Required Minimum Distribution year <b>{{data.rmd.year}}</b> (age
-                        <b>{{data.rmd.age}})</b>
-                    </h6>
+                    <h6>Required Minimum Distribution year <b>{{data.rmd.year}}</b> (age <b>{{data.rmd.age}})</b></h6>
                     Your pretax retirement accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>
                     <div class="alert" v-if="data.rmd.pretaxBalance<500000">Good Job</div>
                     <div class="alert" v-if="data.rmd.pretaxBalance>500000">You'll be required to take out
-                        <b>{{toDollar(data.rmd.rmd)}}</b> from your pretax accounts this year, your
-                        estimated
-                        tax bill
-                        will be
-                        <b class="negative">{{toDollar(data.rmd.tax)}}</b> for withdraw amount of
+                        <b>{{toDollar(data.rmd.rmd)}}</b> from your pretax accounts this year, your estimated tax bill
+                        will be <b class="negative">{{toDollar(data.rmd.tax)}}</b> for withdraw amount of
                         <b>{{toDollar(data.rmd.dist)}}</b>.
                     </div>
                 </div>
                 <hr />
-
                 <div class="mt-3">
-                    <h6>End of life year <b>{{data.person.deceased.year}}</b> (age
-                        <b>{{data.person.deceased.age}}</b>)
+                    <h6>End of life year <b>{{data.person.deceased.year}}</b> (age <b>{{data.person.deceased.age}}</b>)
                     </h6>
                     <pre>
     net worth:              <b :class="{'negative':data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment<0}">{{toDollar(data.person.deceased.roth+data.person.deceased.pretaxBalance+data.person.deceased.investment)}}</b>
@@ -919,17 +889,14 @@
     Roth IRA/401k:          <b :class="{'negative':data.person.deceased.roth<0}">{{toDollar(data.person.deceased.roth)}}</b>
     IRA/401k:               <b :class="{'negative':data.person.deceased.pretaxBalance<0}">{{toDollar(data.person.deceased.pretaxBalance)}}</b>
                     </pre>
-                    you'll have <b>{{toDollar(data.person.deceased.investment)}}</b> in your post-tax
-                    investment accounts,
-                    <b>{{toDollar(data.person.deceased.roth)}}</b> in your Roth IRA/401k accounts, and
-                    <b>{{toDollar(data.person.deceased.pretaxBalance)}}</b> in your tax deferred
-                    traditional retirement accounts.
+                    you'll have <b>{{toDollar(data.person.deceased.investment)}}</b> in your post-tax investment
+                    accounts, <b>{{toDollar(data.person.deceased.roth)}}</b> in your Roth IRA/401k accounts, and
+                    <b>{{toDollar(data.person.deceased.pretaxBalance)}}</b> in your tax deferred traditional retirement
+                    accounts.
                 </div>
                 <hr />
-
-                <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how
-                    much taxes you will pay.
-                </div>
+                <div class="alert alert-info">Tip: How much money you will end up with is what matters, not how much
+                    taxes you will pay.</div>
             </div>
         </div>
     </div>
@@ -960,6 +927,14 @@
 
             // initial data
             return {
+                activeSummaryTab: 'current',
+                summaryTabs: [
+                    { id: 'current', label: 'Current Year' },
+                    { id: 'retirement', label: 'Retirement Year' },
+                    { id: 'withdraw', label: 'Penalty Free Withdraw Year' },
+                    { id: 'rmd', label: 'Required Minimum Distribution Year' },
+                    { id: 'end', label: 'End of Life Year' }
+                ],
                 data: {
                     columns: {
                         age: true, year: true, salary: true, contrib: true, contribRoth: false,
