@@ -470,7 +470,7 @@
                                     </ul>
                                 </div>
                                 <div>
-                                    Your estimated starting Medicare year <b>{{data.medicare.year}}</b> cost based on
+                                    Your estimated starting Medicare year <b>{{data.medicare.year}}</b>
                                 </div>
                                 <div v-if="data.person.retirement.age < data.medicare.age">
                                     When you retire in <b>{{data.person.retirement.age-data.person.age}}</b> years at
@@ -823,7 +823,8 @@
                 <hr />
                 <div id="divRetirementYear">
                     <h6>Retirement year <b>{{data.person.retirement.year}}</b> (age
-                        <b>{{data.person.retirement.age}}</b>)</h6>
+                        <b>{{data.person.retirement.age}}</b>)
+                    </h6>
                     <pre>
     net worth:              <b>{{toDollar(data.person.retirement.roth+data.person.retirement.pretaxBalance+data.person.retirement.investment)}}</b>
     investment (posttax):   <b>{{toDollar(data.person.retirement.investment)}}</b>
@@ -844,7 +845,8 @@
                 <hr />
                 <div id="divWithdrawLogic" class="mt-3">
                     <h6>Penalty free withdraw year <b>{{data.noPenaltyWithdraw.year}}</b> (age
-                        <b>{{data.noPenaltyWithdraw.age}}</b>)</h6>
+                        <b>{{data.noPenaltyWithdraw.age}}</b>)
+                    </h6>
                     <div class="mt-3">
                         After you've reached the age of <b>{{data.noPenaltyWithdraw.age}}</b> (59.5),
                         <pre>
@@ -946,7 +948,7 @@
                     annualReturn: { beforeRetirement: 12, afterRetirement: 6 },
                     distribution: { age: 60, amount: 0, bracket: 12, offset: 0 },
                     noPenaltyWithdraw: { age: 60 },
-                    inflation: 3.0,
+                    inflation: 2.8,
                     meritIncrease: 2,
                     medicare: { age: 65, premiums: [] },
                     rmd: { age: 75, pretaxBalance: 0, year: 0, lifetimeTable: uniformLifetimeTable },
