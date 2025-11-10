@@ -1,0 +1,105 @@
+/* Lightweight theme tweaks extracted from index.html */
+body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    background-color: #f5f7fa;
+    color: #1f2937;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.app-wrapper {
+    max-width: 1200px;
+    margin: 18px auto;
+}
+
+.main-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04), 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+header.app-header {
+    margin-bottom: 18px;
+}
+
+footer.app-footer {
+    margin-top: 22px;
+    padding: 10px 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.nav-tabs .nav-link {
+    font-weight: 600;
+}
+
+.card-section {
+    padding: 12px;
+}
+
+@media print {
+    .tab-content>.tab-pane {
+        display: block;
+        opacity: 100;
+    }
+}
+
+b {
+    text-decoration: underline;
+    padding: 0 3 0 3;
+}
+
+label {
+    margin-bottom: 4px;
+}
+
+div.col-4 {
+    min-height: 80px
+}
+
+hr {
+    margin-bottom: 30px;
+}
+
+tr.retirementAge td,
+.ssAge td,
+.medicareAge td,
+.noPenaltyAge td {
+    font-weight: bold;
+}
+
+tr.rmdAge td {
+    font-weight: bold;
+    color: orange
+}
+
+td.spending,
+td.tax {
+    color: red
+}
+
+h3 {
+    margin-top: 30px
+}
+
+.accordion-button {
+    font-weight: 555;
+    text-decoration: underline;
+}
+
+.hidden {
+    display: none
+}
+
+.negative {
+    color: red
+}
+
+.positive {
+    color: green
+}
+
+.tab-pane {
+    padding: 20px;
+}
