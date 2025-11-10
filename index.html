@@ -637,6 +637,11 @@
                                     v-model="data.columns.tax" />
                                 <label class="form-check-label" for="col-tax">Taxes</label>
                             </div>
+                            <div class="form-check col">
+                                <input class="form-check-input" id="col-net" type="checkbox"
+                                    v-model="data.columns.netWorth" />
+                                <label class="form-check-label" for="col-net">Net Worth</label>
+                            </div>
                         </div>
 
                         <table class="table table-strip table-hover mt-1">
@@ -661,6 +666,7 @@
                                 <th title="FICA, Federal, State, Ordinary Income and Capital Gains"
                                     v-if="data.columns.tax">
                                     Taxes</th>
+                                <th v-if="data.columns.netWorth">Net Worth</th>
                             </thead>
                             <tbody>
                                 <tr v-for="yearly in data.yearlyData" :class="{
@@ -700,6 +706,10 @@
                                     </td>
                                     <td v-if="data.columns.tax"><span :class="{negative:yearly.tax>0}"
                                             :title="JSON.stringify(getTaxBracketsForYear(yearly.year).data)">-{{toDollar(yearly.tax)}}</span>
+                                    </td>
+                                    <td v-if="data.columns.netWorth">
+                                        <span :class="{negative:yearly.netWorth <0,positive:yearly.netWorth>0}">
+                                            {{toDollar(yearly.netWorth)}}</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -937,7 +947,7 @@
                     columns: {
                         age: true, year: true, salary: true, contrib: true, contribRoth: false,
                         rmd: true, spending: true, dist: true, pretax: true, roth: true, investment: true, ss: true,
-                        medicare: true, tax: true
+                        medicare: true, tax: true, netWorth: true
                     },
                     yearlyData: [],
                     spending: { beforeRetirement: 80000, afterRetirement: 70000, insurance: 20000 },
@@ -1027,7 +1037,7 @@
                 return val;
             },
             calculateGain(ignoreRate, amount, rate) {
-                if (ignoreRate) {
+                if (ignoreRate) { // current year, no gain
                     return amount;
                 }
                 if (amount < 0) {
@@ -1052,11 +1062,11 @@
                     let spendingAmount = 0;
                     //before retirement
                     if (age < this.data.person.retirement.age) {
-                        salary = this.calculateGain(i === 0, salary, this.data.meritIncrease);
-                        pretaxBalance = this.calculateGain(i === 0, pretaxBalance, this.data.annualReturn.beforeRetirement);
-                        investment = this.calculateGain(i === 0, investment, this.data.annualReturn.beforeRetirement);
-                        roth = this.calculateGain(i === 0, roth, this.data.annualReturn.beforeRetirement);
-                        spendingAmount = spending.beforeRetirement;
+                        salary = this.calculateGain(i === 0, salary, this.data.meritIncrease * this.calculatePercentOfMonthsLeftInYear(year));
+                        pretaxBalance = this.calculateGain(i === 0, pretaxBalance, this.data.annualReturn.beforeRetirement * this.calculatePercentOfMonthsLeftInYear(year));
+                        investment = this.calculateGain(i === 0, investment, this.data.annualReturn.beforeRetirement * this.calculatePercentOfMonthsLeftInYear(year));
+                        roth = this.calculateGain(i === 0, roth, this.data.annualReturn.beforeRetirement * this.calculatePercentOfMonthsLeftInYear(year));
+                        spendingAmount = spending.beforeRetirement * this.calculatePercentOfMonthsLeftInYear(year);
                     } else { // after retirement
                         salary = 0;
                         pretaxBalance = this.calculateGain(i === 0, pretaxBalance, this.data.annualReturn.afterRetirement);
@@ -1069,10 +1079,10 @@
                     }
 
                     // 401k
-                    const k401 = salary * (this.data.contrib.totalPercent / 100);
-                    const k401Employee = salary * (this.data.contrib.employeePercent / 100);    // for taking it out of savings
-                    const roth401k = salary * (this.data.contrib.rothTotalPercent / 100);
-                    const roth401kEmployee = salary * (this.data.contrib.roth401kPercent / 100);
+                    const k401 = salary * (this.data.contrib.totalPercent / 100) * this.calculatePercentOfMonthsLeftInYear(year);
+                    const k401Employee = salary * (this.data.contrib.employeePercent / 100) * this.calculatePercentOfMonthsLeftInYear(year);    // for taking it out of savings
+                    const roth401k = salary * (this.data.contrib.rothTotalPercent / 100) * this.calculatePercentOfMonthsLeftInYear(year);
+                    const roth401kEmployee = salary * (this.data.contrib.roth401kPercent / 100) * this.calculatePercentOfMonthsLeftInYear(year);
 
                     let taxableEarnedIncome = salary - k401Employee;
                     let taxableOrdinaryIncome = taxableEarnedIncome; // includes roth conversions
@@ -1150,7 +1160,8 @@
                         stateTax: stateTax,
                         title: title,
                         ss: ss,
-                        medicare: medicareBPremium
+                        medicare: medicareBPremium,
+                        netWorth: pretaxBalance + roth + investment
                     };
                     this.data.yearlyData.push(yearly);
 
@@ -1161,7 +1172,7 @@
 
                     // before retirement, investment balance += salary-spending
                     if (age < this.data.person.retirement.age) {
-                        investment += (taxableEarnedIncome - roth401k - spendingAfterSS - tax);
+                        investment += (taxableEarnedIncome - roth401k - spendingAfterSS - tax) * this.calculatePercentOfMonthsLeftInYear(year - 1);
                     }
                     else {
                         // before 59.5, pay tax from investment (otherwise 10% penality)
@@ -1181,6 +1192,7 @@
 
                 //console.table(this.data.yearlyData);
             },
+
             calculateInsuranceSpendingForYear(year) {
                 let ins = this.data.spending.insurance;
                 for (let y = new Date().getFullYear() + 1; y <= year; y++) {
@@ -1238,6 +1250,20 @@
                         break;
                 }
                 return title;
+            },
+            /**
+             * Returns percent (0-100) of months left in the current year.
+             * If the provided year is not the current year, returns 100.
+             * Example: in November (monthIndex=10), monthsLeftIncludingCurrent = 2 -> returns 17
+             */
+            calculatePercentOfMonthsLeftInYear(year) {
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                if (Number(year) !== currentYear) return 1;
+                const currentMonthIndex = now.getMonth(); // 0 = Jan
+                const monthsLeftIncludingCurrent = 12 - currentMonthIndex;
+                const percent = Math.round((monthsLeftIncludingCurrent / 12) * 100) / 100;
+                return percent;
             },
 
             calculateCapitalGainTax(age, year, tax, k401kWithdraw, spendingAmount, investment) {
