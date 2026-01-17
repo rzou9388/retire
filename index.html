@@ -108,6 +108,8 @@
                                     type="number" @change="recalculate" max="100" />
                             </div>
                         </div>
+
+                        <hr />
                         <div>
                             <h5>Summary</h5>
                             You are <b>{{data.person.age}}</b> years old,
@@ -190,6 +192,17 @@
                             </div>
                         </div>
 
+                        <hr />
+                        <div class="col-8">
+                            <label for="person.ss.perMonth">Monthly Social Security Income (age
+                                <b>{{this.data.person.ss.age}}</b>):</label>
+                            <div class="input-group">
+                                <input id="data.person.ss.perMonth" class="form-control"
+                                    :value="toDollar(data.person.ss.perMonth)"
+                                    @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.person.ss.perMonth = Number(val); }"
+                                    type="text" min="0" step="100" @change="calculate" />
+                            </div>
+                        </div>
                         <hr />
                         <div>
                             <h5>Summary
@@ -853,7 +866,6 @@
     <summary>TODOs</summary>
     <ol>
         <li>needs more work on after 59.5 withdraw order and tax implications; pretax should be used before roth</li>
-        <li>ss income input missing</li>
         <li>add calculation for Singler filer, and other types</li>
         <li>before retirement, if started conversion, and salary doesn't cover tax, need to take tax out of investment
         </li>
