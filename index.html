@@ -407,7 +407,8 @@
                         </div>
                         <div class="row mt-4">
                             <div class="col-12">
-                                <h6>Stage 2: When pre-tax balance ≤ $500k (bleed to prepare for RMD)</h6>
+                                <h6>Stage 2: When pre-tax balance is managable (e.g. ≤ $500k, bleed to prepare for RMD)
+                                </h6>
                             </div>
                             <div class="col-4">
                                 <label for="rothConversion2.age">Age to start Stage 2</label>
@@ -436,11 +437,19 @@
                         </div>
                         <div class="mt-4">
                             <h5>Roth Conversion Strategy</h5>
+                            2 stage Roth conversion strategy is designed to minimize the total tax paid on your
+                            retirement, and to prepare for the required minimum distribution (RMD) at age
+                            <b>{{data.rmd.age}}</b>.
+                            It allows agressive conversion in the early stage of retirement when you may have little to
+                            no income, and slows down the conversion in later stage of retirement to avoid pushing you
+                            into higher tax brackets when RMD starts.
+
                             <p><strong>Stage 1:</strong> After retirement begins at age
                                 <b>{{data.person.retirement.age}}</b>, aggressive Roth conversion fills the
                                 <b>{{toPercent(data.rothConversion.bracket)}}</b> tax bracket annually.
                             </p>
-                            <p><strong>Stage 2:</strong> Once pre-tax balance drops to <b>$500,000</b> or less,
+                            <p><strong>Stage 2:</strong> Once pre-tax balance drops to manageable level (e.g. $500k),
+                                the
                                 conversion slows down and is managed carefully to "bleed" the balance so that by age
                                 <b>{{data.rmd.age}}</b> (RMD start), the required minimum distribution won't push you
                                 into higher capital gains tax brackets.
@@ -539,26 +548,52 @@
                                 </ul>
                             </div>
                             <div class="mt-3">
-                                <h6>Social Security benefits tax: </h6>
-                                Depending on your 'provisional income', 0%-85% of SSN income is taxed.
-                                'Provisional income' includes gross income (wages, interest, dividend, pension, rent
-                                income), tax-free interest (municipal bond) and 1/2 of SS Benefits.
-                                <ul>
-                                    <li>
-                                        For single filer (tax): if provisional income is less than 25000, 0%; between
-                                        25000 and 34000, then 50%, above 34000 = 85%.
-                                    </li>
-                                    <li>
-                                        Married Filing Jointly: less than 32,000 = 0%, between 32000 and 44000 = 50%, >
-                                        44000, then 85%.
-                                    </li>
-                                    <li>Note: provisional income is not inflation adjusted.</li>
-                                </ul>
-                                The resulting percentage of SS Benefits is subject to ordinary income tax rate.
-                                <br />
-                                Note: The calculation assumes there's no state tax for SS benefits.
-                                <br />
-                                Note: Roth IRA distributions are not included in the provisional income calculation.
+                                <div>
+                                    <h6><b>Social Security benefits tax: </b></h6>
+                                    Depending on your 'provisional income', 0%-85% of SSN income is taxed.
+                                    'Provisional income' includes gross income (wages, interest, dividend, pension, rent
+                                    income), tax-free interest (municipal bond) and 1/2 of SS Benefits.
+                                    <ul>
+                                        <li>
+                                            For single filer (tax): if provisional income is less than 25000, 0%;
+                                            between
+                                            25000 and 34000, then 50%, above 34000 = 85%.
+                                        </li>
+                                        <li>
+                                            Married Filing Jointly: less than 32,000 = 0%, between 32000 and 44000 =
+                                            50%, >
+                                            44000, then 85%.
+                                        </li>
+                                        <li>Note: provisional income is not inflation adjusted.</li>
+                                    </ul>
+                                    The resulting percentage of SS Benefits is subject to ordinary income tax rate.
+                                    <br />
+                                    Note: The calculation assumes there's no state tax for SS benefits.
+                                    <br />
+                                    Note: Roth IRA distributions are not included in the provisional income calculation.
+                                </div>
+                                <hr />
+                                <div>
+                                    <h6><b>Buckets to withdraw to minimize tax: </b></h6>
+                                    <ul>
+                                        <li>Use tax-deferred accounts (401k, traditional IRA) to reduce taxable income
+                                            in
+                                            early retirement years when you may have little to no income, and fill up
+                                            the
+                                            lower tax brackets first.</li>
+                                        <li>Use Roth accounts for tax free growth and tax free withdraws in later years,
+                                            especially after RMD starts, to avoid pushing you into higher tax brackets.
+                                        </li>
+                                        <li>Use post-tax investment account for more flexibility, but be mindful of
+                                            capital
+                                            gain tax. Keep in mind that there's 0% long term capital gain tax when MAGI
+                                            is below
+                                            threshold (e.g. $98,900 for MFJ for 2026).</li>
+                                        <li>example: $98,900 + $32,200 (standard deduction) - $40,000 (SS) - $50,000
+                                            (Pretax withdraw) = $41,100 investment gain that you can realize with 0%
+                                            tax. </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -873,9 +908,9 @@
         IRA/401k:               <b>{{toDollar(data.rmd.pretaxBalance)}}</b>
                                 </pre>
                                 Your pretax retirement accounts will have <b>{{toDollar(data.rmd.pretaxBalance)}}</b>
-                                <div class="alert" v-if="data.rmd.pretaxBalance<500000">Good Job</div>
-                                <div class="alert" v-if="data.rmd.pretaxBalance>500000">You'll be required to take out
-                                    <b>{{toDollar(data.rmd.rmd)}}</b> from your pretax accounts this year, your
+                                <div class="alert" v-if="data.rmd.pretaxBalance<0">Good Job</div>
+                                <div class="alert" v-if="data.rmd.pretaxBalance>=0">You'll be required to take out
+                                    <b>{{toDollar(data.rmd.rmd)}}</b> from your pretax accounts this year (RMD), your
                                     estimated tax bill
                                     will be <b class="negative">{{toDollar(data.rmd.tax)}}</b> for withdraw amount of
                                     <b>{{toDollar(data.rmd.dist)}}</b>.
