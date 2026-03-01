@@ -193,14 +193,21 @@
                         </div>
 
                         <hr />
-                        <div class="col-8">
-                            <label for="person.ss.perMonth">Monthly Social Security Income (age
-                                <b>{{this.data.person.ss.age}}</b>):</label>
-                            <div class="input-group">
-                                <input id="data.person.ss.perMonth" class="form-control"
-                                    :value="toDollar(data.person.ss.perMonth)"
-                                    @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.person.ss.perMonth = Number(val); }"
-                                    type="text" min="0" step="100" @change="calculate" />
+                        <div class="row">
+                            <div class="col-4">
+                                <label for="person.ss.age">Social Security Benefit Age (62-70):</label>
+                                <input id="person.ss.age" class="form-control" v-model="data.person.ss.age"
+                                    type="number" @change="recalculate" min="62" max="70" />
+                            </div>
+                            <div class="col-4">
+                                <label for="person.ss.perMonth">Monthly Social Security Income (age
+                                    <b>{{this.data.person.ss.age}}</b>):</label>
+                                <div class="input-group">
+                                    <input id="data.person.ss.perMonth" class="form-control"
+                                        :value="toDollar(data.person.ss.perMonth)"
+                                        @input="e => { let val = e.target.value.replace(/[^\d.]/g, ''); data.person.ss.perMonth = Number(val); }"
+                                        type="text" min="0" step="100" @change="calculate" />
+                                </div>
                             </div>
                         </div>
                         <hr />
@@ -371,32 +378,73 @@
                     <div class="tab-pane fade" id="nav-roth" role="tabpanel">
                         <div class="row">
                             <div class="col-4">
-                                <label for="distribution.age">Age to start Roth Conversion
+                                <label for="rothConversion.age">Age to start Roth Conversion
                                 </label>
-                                <input id="distribution.age" class="form-control" v-model="data.distribution.age"
+                                <input id="rothConversion.age" class="form-control" v-model="data.rothConversion.age"
                                     type="number" min="40" step="1" @change="calculate" />
                             </div>
                             <div class="col-4">
-                                <label for="distribution.braket"
+                                <label for="rothConversion.bracket"
                                     title="Projected retirement age tax brackets shown">Conversion based on tax
                                     bracket</label>
-                                <select id="distribution.braket" @change="calculate" class="form-select"
-                                    v-model="data.distribution.bracket">
+                                <select id="rothConversion.bracket" @change="calculate" class="form-select"
+                                    v-model="data.rothConversion.bracket">
                                     <option value="0">0%</option>
-                                    <option v-for="b in getTaxBracketsForYear(data.distribution.year).data"
+                                    <option v-for="b in getTaxBracketsForYear(data.rothConversion.year).data"
                                         :value="b.percent">{{b.percent}}% -
                                         {{toDollar(b.income)}}</option>
                                 </select>
                             </div>
                             <div class="col-4">
-                                <label for="distribution.offset" title="">- or + $ amount from the bracket</label>
+                                <label for="rothConversion.offset" title="">- or + $ amount from the bracket</label>
                                 <div class="input-group">
-                                    <input id="distribution.offset" class="form-control"
-                                        :value="toDollar(data.distribution.offset)"
-                                        @input="e => { let val = e.target.value.replace(/[^\d.-]/g, ''); data.distribution.offset = Number(val); }"
+                                    <input id="rothConversion.offset" class="form-control"
+                                        :value="toDollar(data.rothConversion.offset)"
+                                        @input="e => { let val = e.target.value.replace(/[^\d.-]/g, ''); data.rothConversion.offset = Number(val); }"
                                         type="text" step="1000" @change="calculate" />
                                 </div>
                             </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6>Stage 2: When pre-tax balance ≤ $500k (bleed to prepare for RMD)</h6>
+                            </div>
+                            <div class="col-4">
+                                <label for="rothConversion2.age">Age to start Stage 2</label>
+                                <input id="rothConversion2.age" class="form-control" v-model="data.rothConversion2.age"
+                                    type="number" min="40" step="1" @change="calculate" />
+                            </div>
+                            <div class="col-4">
+                                <label for="rothConversion2.bracket">Stage 2 - Tax bracket</label>
+                                <select id="rothConversion2.bracket" @change="calculate" class="form-select"
+                                    v-model.number="data.rothConversion2.bracket">
+                                    <option :value="0">0%</option>
+                                    <option v-for="b in getTaxBracketsForYear(data.rothConversion2.year).data"
+                                        :value="b.percent">{{b.percent}}% -
+                                        {{toDollar(b.income)}}</option>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <label for="rothConversion2.offset">Stage 2 - Offset</label>
+                                <div class="input-group">
+                                    <input id="rothConversion2.offset" class="form-control"
+                                        :value="toDollar(data.rothConversion2.offset)"
+                                        @input="e => { let val = e.target.value.replace(/[^\d.-]/g, ''); data.rothConversion2.offset = Number(val); }"
+                                        type="text" step="1000" @change="calculate" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h5>Roth Conversion Strategy</h5>
+                            <p><strong>Stage 1:</strong> After retirement begins at age
+                                <b>{{data.person.retirement.age}}</b>, aggressive Roth conversion fills the
+                                <b>{{toPercent(data.rothConversion.bracket)}}</b> tax bracket annually.
+                            </p>
+                            <p><strong>Stage 2:</strong> Once pre-tax balance drops to <b>$500,000</b> or less,
+                                conversion slows down and is managed carefully to "bleed" the balance so that by age
+                                <b>{{data.rmd.age}}</b> (RMD start), the required minimum distribution won't push you
+                                into higher capital gains tax brackets.
+                            </p>
                         </div>
                         <div class="mt-3">
                             <h5>Required Minimum Distribution <b>{{data.rmd.year}}</b> (age <b>{{data.rmd.age}}</b>)
@@ -426,8 +474,8 @@
                                 withdraws from Roth count as taxable income.
                             </div>
                             <div class="mt-3">
-                                Your Roth conversion starts at <b>{{data.distribution.age}}</b>, and
-                                fills up the <b>{{toPercent(data.distribution.bracket)}}</b>tax bracket;
+                                Your Roth conversion starts at <b>{{data.rothConversion.age}}</b>, and
+                                fills up the <b>{{toPercent(data.rothConversion.bracket)}}</b>tax bracket;
                                 <span v-if="data.yearlyData.find(x => x.pretaxBalance == 0)">at
                                     <b>{{data.yearlyData.find(x => x.pretaxBalance == 0).age-1}}</b>, your tax deferred
                                     accounts will have <b>$0.00</b></span>
@@ -636,7 +684,7 @@
                                     <td v-if="data.columns.rmd">{{toDollar(yearly.rmd)}}</td>
                                     <td v-if="data.columns.spending" class="spending">
                                         -{{toDollar(yearly.spending)}}</td>
-                                    <td v-if="data.columns.dist">{{toDollar(yearly.dist)}}</td>
+                                    <td v-if="data.columns.conversionAmount">{{toDollar(yearly.conversionAmount)}}</td>
                                     <td v-if="data.columns.pretax">
                                         <span
                                             :class="{negative:yearly.pretaxBalance <0,positive:yearly.pretaxBalance>0}">

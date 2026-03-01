@@ -6,10 +6,6 @@ const app = createApp({
       savedData.tax.brackets = [];
       savedData.medicare.premiums = [];
       savedData.yearlyData = [];
-      if (savedData.distribution.bracket == 15) {
-        // reset previous 15 before BBB
-        savedData.distribution.bracket = 0;
-      }
       return { data: savedData };
     }
 
@@ -66,7 +62,7 @@ const app = createApp({
           contribRoth: false,
           rmd: true,
           spending: true,
-          dist: true,
+          conversionAmount: true,
           pretax: true,
           roth: true,
           investment: true,
@@ -82,7 +78,14 @@ const app = createApp({
           insurance: 20000,
         },
         annualReturn: { beforeRetirement: 12, afterRetirement: 6 },
-        distribution: { age: 60, amount: 0, bracket: 12, offset: 0 },
+        /** conversion */
+        rothConversion: { age: 60, amount: 0, bracket: 12, offset: 0 },
+        rothConversion2: {
+          age: 70,
+          amount: 0,
+          bracket: 12,
+          offset: 0,
+        },
         noPenaltyWithdraw: { age: 60 },
         inflation: 2.8,
         meritIncrease: 2,
@@ -132,12 +135,12 @@ const app = createApp({
       this.data.contrib.totalPercent = this.calculateTotal401kWithMatch(
         this.data.contrib.employeePercent,
         this.data.contrib.employerPercent,
-        this.data.contrib.employerMatchUpTo
+        this.data.contrib.employerMatchUpTo,
       );
       this.data.contrib.rothTotalPercent = this.calculateTotal401kWithMatch(
         this.data.contrib.roth401kPercent,
         this.data.contrib.employerPercent,
-        this.data.contrib.employerMatchUpTo
+        this.data.contrib.employerMatchUpTo,
       );
 
       this.calculateYearly();
@@ -147,19 +150,23 @@ const app = createApp({
       this.data.rmd = this.mergeYearlyDataByAge(this.data.rmd);
 
       this.data.person.retirement = this.mergeYearlyDataByAge(
-        this.data.person.retirement
+        this.data.person.retirement,
       );
 
-      this.data.distribution = this.mergeYearlyDataByAge(
-        this.data.distribution
+      this.data.rothConversion = this.mergeYearlyDataByAge(
+        this.data.rothConversion,
+      );
+
+      this.data.rothConversion2 = this.mergeYearlyDataByAge(
+        this.data.rothConversion2,
       );
 
       this.data.person.deceased = this.mergeYearlyDataByAge(
-        this.data.person.deceased
+        this.data.person.deceased,
       );
 
       this.data.noPenaltyWithdraw = this.mergeYearlyDataByAge(
-        this.data.noPenaltyWithdraw
+        this.data.noPenaltyWithdraw,
       );
 
       this.data.medicare = this.mergeYearlyDataByAge(this.data.medicare);
@@ -175,7 +182,7 @@ const app = createApp({
     },
     mergeYearlyDataByAge(originalData) {
       const oneYearData = this.data.yearlyData.find(
-        (y) => y.age === originalData.age
+        (y) => y.age === originalData.age,
       );
       const merged = { ...originalData, ...oneYearData };
       return merged;
@@ -186,7 +193,7 @@ const app = createApp({
     calculateTotal401kWithMatch(
       employeePercent,
       employerPercent,
-      matchUpToPercent
+      matchUpToPercent,
     ) {
       const adjustedEmployeePercent =
         employeePercent > matchUpToPercent ? matchUpToPercent : employeePercent;
@@ -237,25 +244,25 @@ const app = createApp({
             i === 0,
             salary,
             this.data.meritIncrease *
-              this.calculatePercentOfMonthsLeftInYear(year)
+              this.calculatePercentOfMonthsLeftInYear(year),
           );
           pretaxBalance = this.calculateGain(
             i === 0,
             pretaxBalance,
             this.data.annualReturn.beforeRetirement *
-              this.calculatePercentOfMonthsLeftInYear(year)
+              this.calculatePercentOfMonthsLeftInYear(year),
           );
           investment = this.calculateGain(
             i === 0,
             investment,
             this.data.annualReturn.beforeRetirement *
-              this.calculatePercentOfMonthsLeftInYear(year)
+              this.calculatePercentOfMonthsLeftInYear(year),
           );
           roth = this.calculateGain(
             i === 0,
             roth,
             this.data.annualReturn.beforeRetirement *
-              this.calculatePercentOfMonthsLeftInYear(year)
+              this.calculatePercentOfMonthsLeftInYear(year),
           );
           spendingAmount =
             spending.beforeRetirement *
@@ -266,17 +273,17 @@ const app = createApp({
           pretaxBalance = this.calculateGain(
             i === 0,
             pretaxBalance,
-            this.data.annualReturn.afterRetirement
+            this.data.annualReturn.afterRetirement,
           );
           investment = this.calculateGain(
             i === 0,
             investment,
-            this.data.annualReturn.afterRetirement
+            this.data.annualReturn.afterRetirement,
           );
           roth = this.calculateGain(
             i === 0,
             roth,
-            this.data.annualReturn.afterRetirement
+            this.data.annualReturn.afterRetirement,
           );
           spendingAmount = spending.afterRetirement;
           if (age < this.data.medicare.age) {
@@ -315,17 +322,37 @@ const app = createApp({
 
         //** calculate how much to convert
         let dist = 0;
-        if (pretaxBalance > 0 && age >= this.data.distribution.age) {
-          const bracket = this.data.distribution.bracket;
+        let conversionAmount = 0;
+        // Determine if conversion should be applied
+        let shouldConvert = false;
+        if (pretaxBalance > 0) {
+          // After retirement, always convert aggressively
+          if (age >= this.data.person.retirement.age) {
+            shouldConvert = true;
+          } else if (age >= this.data.rothConversion.age) {
+            // Before retirement, only if age threshold is met
+            shouldConvert = true;
+          }
+        }
+
+        if (shouldConvert) {
+          // Determine which stage to use based on age only
+          let conversionConfig = this.data.rothConversion;
+          if (age >= this.data.rothConversion2.age) {
+            conversionConfig = this.data.rothConversion2;
+          }
+
+          const bracket = Number(conversionConfig.bracket);
           const totalDistAllowed =
             this.getIncomeForBracketAndYear(year, bracket) -
             taxableOrdinaryIncome +
-            this.data.distribution.offset;
+            conversionConfig.offset;
           if (pretaxBalance < totalDistAllowed) {
             dist = pretaxBalance;
           } else {
             dist = totalDistAllowed;
           }
+          conversionAmount = dist;
 
           // if rmd is greater than calculated distribution amount, then take out RMD
           dist = rmd > dist ? rmd : dist;
@@ -342,7 +369,7 @@ const app = createApp({
         const taxableSS = this.calculateSSToTax(taxableEarnedIncome, ss);
         const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(
           taxableOrdinaryIncome + taxableSS,
-          year
+          year,
         );
         let tax = ordinaryIncomeTax;
         tax += fica;
@@ -353,7 +380,7 @@ const app = createApp({
           tax,
           dist,
           spendingAfterSS,
-          investment
+          investment,
         );
         tax += capitalGainTax;
 
@@ -376,7 +403,7 @@ const app = createApp({
           // medicare kicks in
           medicareBPremium = this.getMedicarePremiumsByMagi(
             taxableOrdinaryIncome + taxableSS,
-            year - 2
+            year - 2,
           );
           medicareBPremium *= 2 * 12; // 2 people for a year
           spendingAfterSS += medicareBPremium;
@@ -391,6 +418,7 @@ const app = createApp({
           roth401k: roth401k,
           rmd: rmd,
           dist: dist,
+          conversionAmount: conversionAmount,
           investment: investment,
           roth: roth,
           tax: tax,
@@ -493,7 +521,7 @@ const app = createApp({
         case this.data.person.ss.age:
           title = "Social Security benefit starts";
           break;
-        case this.data.distribution.age:
+        case this.data.rothConversion.age:
           title = "Roth Conversion starts";
           break;
         case this.data.noPenaltyWithdraw.age:
@@ -524,7 +552,7 @@ const app = createApp({
       tax,
       k401kWithdraw,
       spendingAmount,
-      investment
+      investment,
     ) {
       // before retirement, spending money is from salary, no capital gain
       // after no-penalty withdraw age, take money from roth, no capital gain
@@ -569,10 +597,10 @@ const app = createApp({
     },
 
     getCapitalGain0TaxCeiling(year) {
-      const ceilingInreaseRate = 0.045; // using ssrCeilingInreaseRate
-      const ceiling2025 = 96700;
-      let newCeiling = ceiling2025;
-      for (let i = 0; i < year - 2025; i++) {
+      const ceilingInreaseRate = this.data.inflation / 100; // using inflation
+      const ceiling2026 = 98900;
+      let newCeiling = ceiling2026;
+      for (let i = 0; i < year - 2026; i++) {
         newCeiling = newCeiling * (1 + ceilingInreaseRate);
       }
       return newCeiling;
@@ -618,22 +646,22 @@ const app = createApp({
       this.data.medicare.premiums = [];
       //calculate part b only
       // increase rate = 6.5%  // https://www.statista.com/statistics/1284023/annual-percentage-change-of-medicare-part-b-premium-us/
-      const premiumIncreaseRate = 0.065;
-      const ceilingIncreaseRate = 0.039; // average of last 5 years
+      const premiumIncreaseRate = 0.055;
+      const ceilingIncreaseRate = 0.042; // average of last 7 years
 
       // ceiling increase rate ~3.9%
-      //premium2025
-      const premium2025 = [
-        { ceiling: 212000, monthly: 185 },
-        { ceiling: 266000, monthly: 259 },
-        { ceiling: 344000, monthly: 370 },
-        { ceiling: 400000, monthly: 480.9 },
-        { ceiling: 750000, monthly: 591.9 },
-        { ceiling: 1000000, monthly: 628.9 },
+      //premium2026
+      const premium2026 = [
+        { ceiling: 218000, monthly: 202.9 },
+        { ceiling: 274000, monthly: 284.1 },
+        { ceiling: 342000, monthly: 405.8 },
+        { ceiling: 410000, monthly: 527.5 },
+        { ceiling: 749000, monthly: 649.2 },
+        { ceiling: 1000000, monthly: 689.9 },
       ];
       this.data.medicare.premiums.push({
-        year: 2025,
-        data: premium2025,
+        year: 2026,
+        data: premium2026,
       });
 
       const deceaseYear =
@@ -645,7 +673,7 @@ const app = createApp({
         i++
       ) {
         const previousPremium = this.data.medicare.premiums.find(
-          (x) => x.year == i - 1
+          (x) => x.year == i - 1,
         ).data;
         const newPremium = previousPremium.map((x) => {
           return {
@@ -676,23 +704,23 @@ const app = createApp({
       // historical yearly bracket increase around 1.6% in from 2007-2017
       const r = 0.016;
 
-      const b2025Data = [
-        { percent: 12, income: 96950 },
-        { percent: 22, income: 206700 },
-        { percent: 24, income: 394600 },
-        { percent: 32, income: 501050 },
-        { percent: 35, income: 751600 },
+      const b2026Data = [
+        { percent: 12, income: 100800 },
+        { percent: 22, income: 211400 },
+        { percent: 24, income: 403550 },
+        { percent: 32, income: 512450 },
+        { percent: 35, income: 768700 },
         { percent: 37, income: 1000000 },
       ];
 
-      const b2025 = {
-        year: 2025,
-        standardDeduction: 30000,
-        data: b2025Data,
+      const b2026 = {
+        year: 2026,
+        standardDeduction: 32200,
+        data: b2026Data,
       };
 
-      this.data.tax.brackets = [b2025];
-      let extra65standardDeduction = 3100; // 2025 extra was 3100, it will get adjusted at the same rate as tax brackets
+      this.data.tax.brackets = [b2026];
+      let extra65standardDeduction = 3300; // 2026 extra was 3300, it will get adjusted at the same rate as tax brackets
       for (let i = 2026; i < 2026 + this.data.person.deceased.age; i++) {
         const newdata = this.data.tax.brackets[
           this.data.tax.brackets.length - 1
@@ -706,7 +734,7 @@ const app = createApp({
 
         // if 65, add 65 extra standard deduction for one year, then following years will be based on 65
         const age = this.data.person.age + (year - new Date().getFullYear());
-        if ((i > 2025) & (age <= 65)) {
+        if ((i > 2026) & (age <= 65)) {
           extra65standardDeduction *= 1 + r;
           if (age === 65) {
             standardDeduction += extra65standardDeduction;
@@ -725,7 +753,8 @@ const app = createApp({
      * if bracket is not found, go with the bracket lower
      */
     getIncomeForBracketAndYear(year, bracketRate) {
-      if (bracketRate === "0") return 0; // not selected in dropdown
+      bracketRate = Number(bracketRate); // Ensure it's a number
+      if (bracketRate === 0) return 0; // not selected in dropdown
 
       const brackets = this.getTaxBracketsForYear(year).data;
       let bracket = brackets.find((x) => x.percent === bracketRate);
@@ -781,11 +810,11 @@ const app = createApp({
       return fica;
     },
     getFica_SSTaxCeiling(year) {
-      const ssrCeiling2025 = 176100; // fica is calculated up to this number
-      const ssrCeilingInreaseRate = 0.045; // average from last 8 years
+      const ssrCeiling2026 = 184500; // fica is calculated up to this number
+      const ssrCeilingInreaseRate = 0.0492; // average from last 8 years
 
-      let sum = ssrCeiling2025;
-      for (let i = 0; i < year - 2025; i++) {
+      let sum = ssrCeiling2026;
+      for (let i = 0; i < year - 2026; i++) {
         sum = sum * (1 + ssrCeilingInreaseRate);
       }
       return sum;
