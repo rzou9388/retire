@@ -639,7 +639,7 @@
                             </div>
                             <div class="form-check col">
                                 <input class="form-check-input" id="col-dist" type="checkbox"
-                                    v-model="data.columns.dist" />
+                                    v-model="data.columns.conversionAmount" />
                                 <label class="form-check-label" for="col-dist">Roth Conversion</label>
                             </div>
                             <div class="form-check col">
@@ -689,7 +689,7 @@
                                 <th title="Required Minimum Distribution" v-if="data.columns.rmd">RMD</th>
                                 <th v-if="data.columns.spending" title="inflation adjusted">Spending
                                 </th>
-                                <th v-if="data.columns.dist">Roth Conversion</th>
+                                <th v-if="data.columns.conversionAmount">Roth Conversion</th>
                                 <th v-if="data.columns.pretax" title="traditional 401k, IRA">Tax
                                     Deferred Balance</th>
                                 <th v-if="data.columns.roth">Roth Balance</th>
