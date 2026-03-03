@@ -1,4 +1,29 @@
 import { createApp } from "vue";
+
+// ============= CONSTANTS =============
+const TAX = {
+  SS_LOWER: 32000,
+  SS_UPPER: 44000,
+  SS_RATE_LOWER: 0.5,
+  SS_RATE_UPPER: 0.85,
+  FICA_SS_RATE: 0.062,
+  FICA_MEDICARE_RATE: 0.0145,
+  FICA_MEDICARE_CEILING: 250000,
+  FICA_MEDICARE_RATE_OVER: 0.0235,
+  CAPITAL_GAIN_RATE: 0.15,
+  MEDICARE_SURTAX_RATE: 0.038,
+  MEDICARE_SURTAX_THRESHOLD: 250000,
+};
+const CONFIG = {
+  CAPITAL_GAIN_CEILING_2026: 98900,
+  MEDICARE_PREMIUM_INCREASE: 0.055,
+  MEDICARE_CEILING_INCREASE: 0.042,
+  FICA_SS_CEILING_2026: 184500,
+  FICA_SS_CEILING_INCREASE: 0.0492,
+  TAX_BRACKET_INCREASE: 0.016,
+};
+
+// ============= VUE APP =============
 const app = createApp({
   data() {
     let savedData = JSON.parse(localStorage.getItem("data"));
@@ -130,8 +155,11 @@ const app = createApp({
     };
   },
 
+  // ============= METHODS =============
   methods: {
+    // --- Main calculation orchestrator ---
     calculate() {
+      // Update contribution rates
       this.data.contrib.totalPercent = this.calculateTotal401kWithMatch(
         this.data.contrib.employeePercent,
         this.data.contrib.employerPercent,
@@ -143,7 +171,9 @@ const app = createApp({
         this.data.contrib.employerMatchUpTo,
       );
 
+      // Calculate yearly data and log as table
       this.calculateYearly();
+      console.table(this.data.yearlyData);
 
       this.saveState();
 
@@ -173,13 +203,13 @@ const app = createApp({
 
       window.setTimeout(updateChart, 200);
     },
-    /**
-     * recalculate when age changes
-     */
+
+    // --- Recalculate when data changes ---
     recalculate() {
       this.estimateMedicarePremiumsforAllYears();
       this.calculate();
     },
+    // --- Merge yearly data by age ---
     mergeYearlyDataByAge(originalData) {
       const oneYearData = this.data.yearlyData.find(
         (y) => y.age === originalData.age,
@@ -190,6 +220,7 @@ const app = createApp({
     /**
      * ex: employer = 7%, employer = 50% up to 6%, total = 10
      */
+    // --- Calculate total 401k with employer match ---
     calculateTotal401kWithMatch(
       employeePercent,
       employerPercent,
@@ -201,15 +232,18 @@ const app = createApp({
         employeePercent + adjustedEmployeePercent * (employerPercent / 100)
       );
     },
+    // --- Save state to localStorage ---
     saveState() {
       localStorage.setItem("data", JSON.stringify(this.data));
     },
+    // --- Compound interest calculation ---
     calculateCompound(val, rate, years, extraContrib = 0) {
       for (let i = 0; i < years; i++) {
         val = val * (1 + rate / 100) + extraContrib;
       }
       return val;
     },
+    // --- Calculate gain for a year ---
     calculateGain(ignoreRate, amount, rate) {
       if (ignoreRate) {
         // current year, no gain
@@ -220,6 +254,7 @@ const app = createApp({
       }
       return amount * (1 + rate / 100);
     },
+    // --- Main yearly calculation loop ---
     calculateYearly() {
       this.data.yearlyData = [];
       const yearsToCalc = this.data.person.deceased.age - this.data.person.age;
@@ -312,66 +347,53 @@ const app = createApp({
         let taxableEarnedIncome = salary - k401Employee;
         let taxableOrdinaryIncome = taxableEarnedIncome; // includes roth conversions
 
-        // rmd age 75+ after 2035
+        // Required Minimum Distribution (RMD) age 75+
         let rmd = 0;
         if (age >= this.data.rmd.age) {
-          rmd =
-            pretaxBalance /
-            this.data.rmd.lifetimeTable.find((x) => x[0] === age)[1];
+          const divisor = this.data.rmd.lifetimeTable.find(
+            (x) => x[0] === age,
+          )?.[1];
+          rmd = divisor ? pretaxBalance / divisor : 0;
         }
 
-        //** calculate how much to convert
+        // --- Roth conversion logic ---
         let dist = 0;
         let conversionAmount = 0;
-        // Determine if conversion should be applied
-        let shouldConvert = false;
-        if (
+        let shouldConvert =
           pretaxBalance > 0 &&
           this.data.rothConversion.bracket > 0 &&
-          age >= this.data.rothConversion.age
-        ) {
-          shouldConvert = true;
-        }
-
+          age >= this.data.rothConversion.age;
         if (shouldConvert) {
-          // Determine which stage to use based on age only
           let conversionConfig = this.data.rothConversion;
-          if (age >= this.data.rothConversion2.age) {
+          if (age >= this.data.rothConversion2.age)
             conversionConfig = this.data.rothConversion2;
-          }
-
           const bracket = Number(conversionConfig.bracket);
-          const totalDistAllowed =
-            this.getIncomeForBracketAndYear(year, bracket) -
-            taxableOrdinaryIncome +
-            conversionConfig.offset;
-          if (pretaxBalance < totalDistAllowed) {
-            dist = pretaxBalance;
-          } else {
-            dist = totalDistAllowed;
+          if (bracket > 0) {
+            const totalDistAllowed =
+              this.getIncomeForBracketAndYear(year, bracket) -
+              taxableOrdinaryIncome +
+              conversionConfig.offset;
+            dist =
+              pretaxBalance < totalDistAllowed
+                ? pretaxBalance
+                : totalDistAllowed;
+            conversionAmount = dist;
           }
-          conversionAmount = dist;
-
-          // if rmd is greater than calculated distribution amount, then take out RMD
-          dist = rmd > dist ? rmd : dist;
-
-          // dist taxed at ordinary income
+          dist = Math.max(rmd, dist);
           taxableOrdinaryIncome += dist;
         }
 
         const ss = this.calculateSSBenefits(age);
         let spendingAfterSS = spendingAmount - ss;
 
-        // ===========  taxes
-        const fica = this.calculateFica(salary, year); // fica only on salary
+        // --- Taxes ---
+        const fica = this.calculateFica(salary, year);
         const taxableSS = this.calculateSSToTax(taxableEarnedIncome, ss);
         const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(
           taxableOrdinaryIncome + taxableSS,
           year,
         );
-        let tax = ordinaryIncomeTax;
-        tax += fica;
-
+        let tax = ordinaryIncomeTax + fica;
         const capitalGainTax = this.calculateCapitalGainTax(
           age,
           year,
@@ -381,52 +403,46 @@ const app = createApp({
           investment,
         );
         tax += capitalGainTax;
-
-        let stateTax = 0;
-        // before retirement, state income tax
-        if (age < this.data.person.retirement.age) {
-          stateTax =
-            taxableOrdinaryIncome *
-            (this.data.tax.state.beforeRetirement / 100);
-        } else {
-          stateTax =
-            taxableOrdinaryIncome * (this.data.tax.state.afterRetirement / 100);
-        }
+        let stateTax =
+          age < this.data.person.retirement.age
+            ? taxableOrdinaryIncome *
+              (this.data.tax.state.beforeRetirement / 100)
+            : taxableOrdinaryIncome *
+              (this.data.tax.state.afterRetirement / 100);
         tax += stateTax;
-        // ==========  end of taxes
 
+        // --- Medicare premium ---
         let medicareBPremium = 0;
-
         if (age >= this.data.medicare.age) {
-          // medicare kicks in
-          medicareBPremium = this.getMedicarePremiumsByMagi(
-            taxableOrdinaryIncome + taxableSS,
-            year - 2,
-          );
-          medicareBPremium *= 2 * 12; // 2 people for a year
+          medicareBPremium =
+            this.getMedicarePremiumsByMagi(
+              taxableOrdinaryIncome + taxableSS,
+              year - 2,
+            ) * 24;
           spendingAfterSS += medicareBPremium;
         }
 
+        // --- Collect yearly data ---
         let yearly = {
-          age: age,
-          pretaxBalance: pretaxBalance,
-          year: year,
-          salary: salary,
-          k401: k401,
-          roth401k: roth401k,
-          rmd: rmd,
-          dist: dist,
-          conversionAmount: conversionAmount,
-          investment: investment,
-          roth: roth,
-          tax: tax,
+          age,
+          pretaxBalance,
+          year,
+          salary,
+          k401,
+          roth401k,
+          rmd,
+          dist,
+          conversionAmount,
+          investment,
+          roth,
+          tax,
           spending: spendingAmount,
-          fica: fica,
-          ordinaryIncomeTax: ordinaryIncomeTax,
-          capitalGainTax: capitalGainTax,
-          stateTax: stateTax,
-          title: title,
-          ss: ss,
+          fica,
+          ordinaryIncomeTax,
+          capitalGainTax,
+          stateTax,
+          title,
+          ss,
           medicare: medicareBPremium,
           netWorth: pretaxBalance + roth + investment,
         };
@@ -496,13 +512,12 @@ const app = createApp({
     /**
      * returns amount of ss taxable based on 'total income/inflow'
      */
+    // --- Calculate taxable Social Security ---
     calculateSSToTax(otherIncome, ss) {
       const provisionalIncome = otherIncome + ss / 2;
-      if (provisionalIncome < 32000) return 0;
-      if (provisionalIncome < 44000) return ss * 0.5;
-
-      //else
-      return ss * 0.85;
+      if (provisionalIncome < TAX.SS_LOWER) return 0;
+      if (provisionalIncome < TAX.SS_UPPER) return ss * TAX.SS_RATE_LOWER;
+      return ss * TAX.SS_RATE_UPPER;
     },
     getRowTitle(age) {
       let title = "";
