@@ -325,14 +325,12 @@ const app = createApp({
         let conversionAmount = 0;
         // Determine if conversion should be applied
         let shouldConvert = false;
-        if (pretaxBalance > 0) {
-          // After retirement, always convert aggressively
-          if (age >= this.data.person.retirement.age) {
-            shouldConvert = true;
-          } else if (age >= this.data.rothConversion.age) {
-            // Before retirement, only if age threshold is met
-            shouldConvert = true;
-          }
+        if (
+          pretaxBalance > 0 &&
+          this.data.rothConversion.bracket > 0 &&
+          age >= this.data.rothConversion.age
+        ) {
+          shouldConvert = true;
         }
 
         if (shouldConvert) {
