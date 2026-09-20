@@ -7,7 +7,7 @@ export const TAX = {
   FICA_MEDICARE_RATE: 0.0145,
   FICA_MEDICARE_CEILING: 250000,
   FICA_MEDICARE_RATE_OVER: 0.0235,
-  CAPITAL_GAIN_RATE: 0.15,
+  CAPITAL_GAIN_RATE: 0.15, // 2026: 613k for married filing jointly; up to 545k for single; 579k for head of household; 272k for married filing separately
   MEDICARE_SURTAX_RATE: 0.038,
   MEDICARE_SURTAX_THRESHOLD: 250000,
 };

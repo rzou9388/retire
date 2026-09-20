@@ -33,6 +33,11 @@ export default defineComponent({
         <ul>
           <li>Federal Ordinary Income Tax (see table below) - with historical 1.7% increase in bracket ceilings each year</li>
           <li>Federal Capital Gain Tax (0%/15%/20%/23.8% for long term)</li>
+            <ul>
+              <li> 2026 15%: $613k for married filing jointly; up to $545k for single; $579k for head of household; $272k for married filing separately
+              </li>
+              <li>fixed federal <b>15%</b> is used by the calculator</li>
+            </ul>
           <li>FICA (SS & Medicare), 6.2%, and extra 0.9% for portion of salary income over $250,000; no FICA on capital gains or roth conversion.</li>
           <li>Medicare Surtax 3.8% on Capital Gain for MAGI over $250,000.</li>
           <li>State Tax inputs allows different taxes for before and after retirement.</li>
