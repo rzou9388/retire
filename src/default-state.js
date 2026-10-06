@@ -59,6 +59,7 @@ export function createDefaultAppState() {
         netWorth: true,
       },
       yearlyData: [],
+      investmentContributions: [],
       spending: {
         beforeRetirement: 80000,
         afterRetirement: 70000,
@@ -121,6 +122,7 @@ export function loadInitialAppState() {
     savedData.tax.brackets = [];
     savedData.medicare.premiums = [];
     savedData.yearlyData = [];
+    savedData.investmentContributions ??= [];
     return { data: savedData };
   }
   return createDefaultAppState();

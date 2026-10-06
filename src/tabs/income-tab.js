@@ -63,6 +63,34 @@ export default defineComponent({
     </div>
     <hr />
     <div>
+      <div class="d-flex align-items-center justify-content-between">
+        <h5>Additional Investment Funds</h5>
+        <button class="btn btn-outline-primary btn-sm" type="button" @click="state.data.investmentContributions.push({ label: '', age: state.data.person.age, amount: 0 }); actions.calculate()">Add funds</button>
+      </div>
+      <p>Add one-time amounts, such as a home sale or inheritance, to taxable investments at the selected age.</p>
+      <div v-for="(contribution, index) in state.data.investmentContributions" :key="index" class="row g-2 align-items-end mb-2">
+        <div class="col-md-5">
+          <label :for="'investmentContributionLabel' + index">Description:</label>
+          <input :id="'investmentContributionLabel' + index" class="form-control" v-model="contribution.label" type="text" placeholder="Home sale, inheritance" @change="actions.calculate" />
+        </div>
+        <div class="col-md-2">
+          <label :for="'investmentContributionAge' + index">Age:</label>
+          <input :id="'investmentContributionAge' + index" class="form-control" v-model.number="contribution.age" type="number" min="0" step="1" @change="actions.calculate" />
+        </div>
+        <div class="col-md-4">
+          <label :for="'investmentContributionAmount' + index">Amount:</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input :id="'investmentContributionAmount' + index" class="form-control" v-model.number="contribution.amount" type="number" min="0" step="1000" @change="actions.calculate" />
+          </div>
+        </div>
+        <div class="col-md-1 d-flex align-items-end justify-content-center">
+          <button class="btn btn-outline-danger btn-sm mt-4" type="button" :aria-label="'Remove ' + (contribution.label || 'investment contribution')" @click="state.data.investmentContributions.splice(index, 1); actions.calculate()">&times;</button>
+        </div>
+      </div>
+    </div>
+    <hr />
+    <div>
       <h5>Summary</h5>
       Your current household earned income is <b>{{actions.toDollar(state.data.person.salary)}}</b>, you
       expect annual merit increase of <b>{{actions.toPercent(state.data.meritIncrease)}}</b>.

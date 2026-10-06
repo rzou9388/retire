@@ -326,6 +326,13 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           }
         }
 
+        for (const contribution of this.data.investmentContributions ?? []) {
+          if (Number(contribution.age) === age) {
+            const amount = Number(contribution.amount);
+            if (Number.isFinite(amount) && amount > 0) investment += amount;
+          }
+        }
+
         const k401 =
           salary *
           (this.data.contrib.totalPercent / 100) *
