@@ -71,7 +71,7 @@ export default defineComponent({
       <div v-for="(contribution, index) in state.data.investmentContributions" :key="index" class="row g-2 align-items-end mb-2">
         <div class="col-md-5">
           <label :for="'investmentContributionLabel' + index">Description:</label>
-          <input :id="'investmentContributionLabel' + index" class="form-control" v-model="contribution.label" type="text" placeholder="Home sale, inheritance" @change="actions.calculate" />
+          <input :id="'investmentContributionLabel' + index" class="form-control" v-model="contribution.label" type="text" placeholder="Home sale, inheritance, etc" @change="actions.calculate" />
         </div>
         <div class="col-md-2">
           <label :for="'investmentContributionAge' + index">Age:</label>

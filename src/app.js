@@ -465,17 +465,36 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
             (taxableEarnedIncome - roth401k - spendingAfterSS - tax) *
             calculatePercentOfMonthsLeftInYear(year - 1);
         } else {
-          if (investment - (tax + spendingAfterSS) > 0) {
-            investment -= tax + spendingAfterSS;
-          } else {
-            if (
-              age >= this.data.noPenaltyWithdraw.age &&
-              roth - (tax + spendingAfterSS) > 0
-            ) {
-              roth -= tax + spendingAfterSS;
-            } else {
-              pretaxBalance -= tax + spendingAfterSS;
-            }
+          let remainingWithdrawal = Math.max(tax + spendingAfterSS, 0);
+          const investmentWithdrawal = Math.min(
+            Math.max(investment, 0),
+            remainingWithdrawal,
+          );
+          investment -= investmentWithdrawal;
+          remainingWithdrawal -= investmentWithdrawal;
+
+          if (age >= this.data.noPenaltyWithdraw.age) {
+            const rothWithdrawal = Math.min(
+              Math.max(roth, 0),
+              remainingWithdrawal,
+            );
+            roth -= rothWithdrawal;
+            remainingWithdrawal -= rothWithdrawal;
+          }
+
+          const pretaxWithdrawal = Math.min(
+            Math.max(pretaxBalance, 0),
+            remainingWithdrawal,
+          );
+          pretaxBalance -= pretaxWithdrawal;
+          remainingWithdrawal -= pretaxWithdrawal;
+
+          if (remainingWithdrawal > 0 && pretaxBalance <= 0) {
+            const rothWithdrawal = Math.min(
+              Math.max(roth, 0),
+              remainingWithdrawal,
+            );
+            roth -= rothWithdrawal;
           }
         }
 
