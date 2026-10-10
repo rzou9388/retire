@@ -41,7 +41,7 @@ export default defineComponent({
       return this.activeTab === this.tabId;
     },
   },
-  template: `
+  template: /* html */ `
     <div v-if="shouldRender">
       <component :is="currentComponent" :state="state" :actions="actions" />
     </div>

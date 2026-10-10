@@ -343,15 +343,21 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
 
         const pretaxReturn = pretaxBalance - pretaxStartingBalance;
         const rothReturn = roth - rothStartingBalance;
+        let additionalExpense = 0;
         for (const contribution of this.data.investmentContributions ?? []) {
           if (Number(contribution.age) === age) {
             const amount = Number(contribution.amount);
             if (Number.isFinite(amount) && amount > 0) {
-              investment += amount;
-              investmentContribution += amount;
+              if (contribution.type === "expense") {
+                additionalExpense += amount;
+              } else {
+                investment += amount;
+                investmentContribution += amount;
+              }
             }
           }
         }
+        spendingAmount += additionalExpense;
         const investmentReturn =
           investment - investmentStartingBalance - investmentContribution;
 
@@ -472,6 +478,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           investmentStartingBalance,
           investmentReturn,
           investmentContribution,
+          additionalExpense,
           investmentPriorYearBalance,
           investmentPriorYearCashFlow,
           investmentPriorYearWithdrawal,
@@ -506,8 +513,12 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
 
         if (age < this.data.person.retirement.age) {
           investmentCashFlow =
-            (taxableEarnedIncome - roth401k - spendingAfterSS - tax) *
-            calculatePercentOfMonthsLeftInYear(year - 1);
+            (taxableEarnedIncome -
+              roth401k -
+              (spendingAfterSS - additionalExpense) -
+              tax) *
+              calculatePercentOfMonthsLeftInYear(year - 1) -
+            additionalExpense;
           investment += investmentCashFlow;
         } else {
           let remainingWithdrawal = Math.max(tax + spendingAfterSS, 0);

@@ -40,7 +40,7 @@ export default defineComponent({
       return [
         ...enteringBalance,
         `Annual return: ${this.toDisplayDollar(yearly.investmentReturn, yearly)}`,
-        `Age-specific contributions: ${this.toDisplayDollar(yearly.investmentContribution, yearly)}`,
+        `One-time income added: ${this.toDisplayDollar(yearly.investmentContribution, yearly)}`,
         `Balance shown: ${this.toDisplayDollar(yearly.investment, yearly)}`,
       ].join("\n");
     },
@@ -184,7 +184,7 @@ export default defineComponent({
           <td v-if="state.data.columns.contrib">{{toDisplayDollar(yearly.k401, yearly)}}</td>
           <td v-if="state.data.columns.contribRoth">{{toDisplayDollar(yearly.roth401k, yearly)}}</td>
           <td v-if="state.data.columns.rmd">{{toDisplayDollar(yearly.rmd, yearly)}}</td>
-          <td v-if="state.data.columns.spending" class="spending">-{{toDisplayDollar(yearly.spending, yearly)}}</td>
+          <td v-if="state.data.columns.spending" class="spending" :title="yearly.additionalExpense ? 'Includes one-time expenses of ' + toDisplayDollar(yearly.additionalExpense, yearly) : ''">-{{toDisplayDollar(yearly.spending, yearly)}}</td>
           <td v-if="state.data.columns.conversionAmount" class="roth-conversion">{{toDisplayDollar(yearly.conversionAmount, yearly)}}</td>
           <td v-if="state.data.columns.pretax"><span :class="{negative: yearly.pretaxBalance < 0, positive: yearly.pretaxBalance > 0}" :title="getPretaxTooltip(yearly)">{{toDisplayDollar(yearly.pretaxBalance, yearly)}}</span></td>
           <td v-if="state.data.columns.roth"><span :class="{negative: yearly.roth < 0, positive: yearly.roth > 0}" :title="getRothTooltip(yearly)">{{toDisplayDollar(yearly.roth, yearly)}}</span></td>

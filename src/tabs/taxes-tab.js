@@ -3,7 +3,7 @@ import { defineComponent } from "vue";
 export default defineComponent({
   name: "TaxesTab",
   props: ["state", "actions"],
-  template: `
+  template: /* html */ `
     <div class="row">
       <div class="col-4">
         <label for="stateTaxBefore">State Tax (Before Retirement)</label>
