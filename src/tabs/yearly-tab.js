@@ -3,6 +3,82 @@ import { defineComponent } from "vue";
 export default defineComponent({
   name: "YearlyTab",
   props: ["state", "actions"],
+  methods: {
+    getTaxTooltip(yearly) {
+      return [
+        `Federal income tax: ${this.actions.toDollar(yearly.ordinaryIncomeTax)}`,
+        `FICA: ${this.actions.toDollar(yearly.fica)}`,
+        `Capital gains tax: ${this.actions.toDollar(yearly.capitalGainTax)}`,
+        `State tax: ${this.actions.toDollar(yearly.stateTax)}`,
+        `Total: ${this.actions.toDollar(yearly.tax)}`,
+      ].join("\n");
+    },
+    getInvestmentTooltip(yearly) {
+      const enteringBalance =
+        yearly.investmentPriorYearBalance === null
+          ? [
+              `Initial balance entering year: ${this.actions.toDollar(yearly.investmentStartingBalance)}`,
+            ]
+          : [
+              `Previous row balance: ${this.actions.toDollar(yearly.investmentPriorYearBalance)}`,
+              `Post-row cash flow adjustment: ${this.actions.toDollar(yearly.investmentPriorYearCashFlow)}`,
+              `Post-row investment withdrawal: -${this.actions.toDollar(yearly.investmentPriorYearWithdrawal)}`,
+              `Balance entering year: ${this.actions.toDollar(yearly.investmentStartingBalance)}`,
+            ];
+      return [
+        ...enteringBalance,
+        `Annual return: ${this.actions.toDollar(yearly.investmentReturn)}`,
+        `Age-specific contributions: ${this.actions.toDollar(yearly.investmentContribution)}`,
+        `Balance shown: ${this.actions.toDollar(yearly.investment)}`,
+      ].join("\n");
+    },
+    getPretaxTooltip(yearly) {
+      const enteringBalance =
+        yearly.pretaxPriorYearBalance === null
+          ? [
+              `Initial balance entering year: ${this.actions.toDollar(yearly.pretaxStartingBalance)}`,
+            ]
+          : [
+              `Previous row balance: ${this.actions.toDollar(yearly.pretaxPriorYearBalance)}`,
+              `401(k) contribution added: ${this.actions.toDollar(yearly.pretaxPriorYearContribution)}`,
+              `Distribution or conversion: -${this.actions.toDollar(yearly.pretaxPriorYearDistribution)}`,
+              `Post-row spending withdrawal: -${this.actions.toDollar(yearly.pretaxPriorYearWithdrawal)}`,
+              `Balance entering year: ${this.actions.toDollar(yearly.pretaxStartingBalance)}`,
+            ];
+      return [
+        ...enteringBalance,
+        `Annual return: ${this.actions.toDollar(yearly.pretaxReturn)}`,
+        `Balance shown: ${this.actions.toDollar(yearly.pretaxBalance)}`,
+      ].join("\n");
+    },
+    getRothTooltip(yearly) {
+      const enteringBalance =
+        yearly.rothPriorYearBalance === null
+          ? [
+              `Initial balance entering year: ${this.actions.toDollar(yearly.rothStartingBalance)}`,
+            ]
+          : [
+              `Previous row balance: ${this.actions.toDollar(yearly.rothPriorYearBalance)}`,
+              `Pretax distribution added: ${this.actions.toDollar(yearly.rothPriorYearDistribution)}`,
+              `Roth 401(k) contribution: ${this.actions.toDollar(yearly.rothPriorYearContribution)}`,
+              `Roth withdrawal: -${this.actions.toDollar(yearly.rothPriorYearWithdrawal)}`,
+              `Balance entering year: ${this.actions.toDollar(yearly.rothStartingBalance)}`,
+            ];
+      return [
+        ...enteringBalance,
+        `Annual return: ${this.actions.toDollar(yearly.rothReturn)}`,
+        `Balance shown: ${this.actions.toDollar(yearly.roth)}`,
+      ].join("\n");
+    },
+    getNetWorthTooltip(yearly) {
+      return [
+        `Tax-deferred balance: ${this.actions.toDollar(yearly.pretaxBalance)}`,
+        `Roth balance: ${this.actions.toDollar(yearly.roth)}`,
+        `Investment balance: ${this.actions.toDollar(yearly.investment)}`,
+        `Net worth: ${this.actions.toDollar(yearly.netWorth)}`,
+      ].join("\n");
+    },
+  },
   template: `
     <div class="row">
       <div class="form-check col-1">
@@ -93,14 +169,14 @@ export default defineComponent({
           <td v-if="state.data.columns.contribRoth">{{actions.toDollar(yearly.roth401k)}}</td>
           <td v-if="state.data.columns.rmd">{{actions.toDollar(yearly.rmd)}}</td>
           <td v-if="state.data.columns.spending" class="spending">-{{actions.toDollar(yearly.spending)}}</td>
-          <td v-if="state.data.columns.conversionAmount">{{actions.toDollar(yearly.conversionAmount)}}</td>
-          <td v-if="state.data.columns.pretax"><span :class="{negative: yearly.pretaxBalance < 0, positive: yearly.pretaxBalance > 0}">{{actions.toDollar(yearly.pretaxBalance)}}</span></td>
-          <td v-if="state.data.columns.roth"><span :class="{negative: yearly.roth < 0, positive: yearly.roth > 0}">{{actions.toDollar(yearly.roth)}}</span></td>
-          <td v-if="state.data.columns.investment"><span :class="{negative: yearly.investment < 0, positive: yearly.investment > 0}">{{actions.toDollar(yearly.investment)}}</span></td>
+          <td v-if="state.data.columns.conversionAmount" class="roth-conversion">{{actions.toDollar(yearly.conversionAmount)}}</td>
+          <td v-if="state.data.columns.pretax"><span :class="{negative: yearly.pretaxBalance < 0, positive: yearly.pretaxBalance > 0}" :title="getPretaxTooltip(yearly)">{{actions.toDollar(yearly.pretaxBalance)}}</span></td>
+          <td v-if="state.data.columns.roth"><span :class="{negative: yearly.roth < 0, positive: yearly.roth > 0}" :title="getRothTooltip(yearly)">{{actions.toDollar(yearly.roth)}}</span></td>
+          <td v-if="state.data.columns.investment"><span :class="{negative: yearly.investment < 0, positive: yearly.investment > 0}" :title="getInvestmentTooltip(yearly)">{{actions.toDollar(yearly.investment)}}</span></td>
           <td v-if="state.data.columns.medicare"><span :class="{negative: yearly.medicare > 0}">-{{actions.toDollar(yearly.medicare)}}</span></td>
           <td v-if="state.data.columns.ss"><span :class="{positive: yearly.ss > 0}">{{actions.toDollar(yearly.ss)}}</span></td>
-          <td v-if="state.data.columns.tax"><span :class="{negative: yearly.tax > 0}" :title="JSON.stringify(actions.getTaxBracketsForYear(yearly.year).data)">-{{actions.toDollar(yearly.tax)}}</span></td>
-          <td v-if="state.data.columns.netWorth"><span :class="{negative: yearly.netWorth < 0, positive: yearly.netWorth > 0}">{{actions.toDollar(yearly.netWorth)}}</span></td>
+          <td v-if="state.data.columns.tax"><span :class="{negative: yearly.tax > 0}" :title="getTaxTooltip(yearly)">-{{actions.toDollar(yearly.tax)}}</span></td>
+          <td v-if="state.data.columns.netWorth"><span :class="{negative: yearly.netWorth < 0, positive: yearly.netWorth > 0}" :title="getNetWorthTooltip(yearly)">{{actions.toDollar(yearly.netWorth)}}</span></td>
         </tr>
       </tbody>
     </table>

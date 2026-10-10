@@ -15,6 +15,10 @@
     "/^node --check src/app\\.js$/": {
       "approve": true,
       "matchCommandLine": true
+    },
+    "/^node --check src/tabs/yearly-tab\\.js$/": {
+      "approve": true,
+      "matchCommandLine": true
     }
   }
 }

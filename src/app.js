@@ -264,6 +264,17 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       let salary = this.data.person.salary;
       let investment = this.data.person.investment;
       let roth = this.data.person.roth;
+      let investmentPriorYearBalance = null;
+      let investmentPriorYearCashFlow = 0;
+      let investmentPriorYearWithdrawal = 0;
+      let pretaxPriorYearBalance = null;
+      let pretaxPriorYearContribution = 0;
+      let pretaxPriorYearDistribution = 0;
+      let pretaxPriorYearWithdrawal = 0;
+      let rothPriorYearBalance = null;
+      let rothPriorYearDistribution = 0;
+      let rothPriorYearContribution = 0;
+      let rothPriorYearWithdrawal = 0;
       let spending = {
         beforeRetirement: this.data.spending.beforeRetirement,
         afterRetirement: this.data.spending.afterRetirement,
@@ -272,6 +283,10 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       for (let i = 0; i <= yearsToCalc; i++) {
         const title = getRowTitle(age, this);
         let spendingAmount = 0;
+        const pretaxStartingBalance = pretaxBalance;
+        const rothStartingBalance = roth;
+        const investmentStartingBalance = investment;
+        let investmentContribution = 0;
         if (age < this.data.person.retirement.age) {
           salary = calculateGain(
             i === 0,
@@ -326,12 +341,19 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           }
         }
 
+        const pretaxReturn = pretaxBalance - pretaxStartingBalance;
+        const rothReturn = roth - rothStartingBalance;
         for (const contribution of this.data.investmentContributions ?? []) {
           if (Number(contribution.age) === age) {
             const amount = Number(contribution.amount);
-            if (Number.isFinite(amount) && amount > 0) investment += amount;
+            if (Number.isFinite(amount) && amount > 0) {
+              investment += amount;
+              investmentContribution += amount;
+            }
           }
         }
+        const investmentReturn =
+          investment - investmentStartingBalance - investmentContribution;
 
         const k401 =
           salary *
@@ -433,6 +455,12 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         const yearly = {
           age,
           pretaxBalance,
+          pretaxStartingBalance,
+          pretaxReturn,
+          pretaxPriorYearBalance,
+          pretaxPriorYearContribution,
+          pretaxPriorYearDistribution,
+          pretaxPriorYearWithdrawal,
           year,
           salary,
           k401,
@@ -441,7 +469,19 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           dist,
           conversionAmount,
           investment,
+          investmentStartingBalance,
+          investmentReturn,
+          investmentContribution,
+          investmentPriorYearBalance,
+          investmentPriorYearCashFlow,
+          investmentPriorYearWithdrawal,
           roth,
+          rothStartingBalance,
+          rothReturn,
+          rothPriorYearBalance,
+          rothPriorYearDistribution,
+          rothPriorYearContribution,
+          rothPriorYearWithdrawal,
           tax,
           spending: spendingAmount,
           fica,
@@ -459,14 +499,19 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         year++;
         roth = roth + dist + roth401k;
         pretaxBalance = pretaxBalance + k401 - dist;
+        let pretaxWithdrawal = 0;
+        let rothWithdrawal = 0;
+        let investmentCashFlow = 0;
+        let investmentWithdrawal = 0;
 
         if (age < this.data.person.retirement.age) {
-          investment +=
+          investmentCashFlow =
             (taxableEarnedIncome - roth401k - spendingAfterSS - tax) *
             calculatePercentOfMonthsLeftInYear(year - 1);
+          investment += investmentCashFlow;
         } else {
           let remainingWithdrawal = Math.max(tax + spendingAfterSS, 0);
-          const investmentWithdrawal = Math.min(
+          investmentWithdrawal = Math.min(
             Math.max(investment, 0),
             remainingWithdrawal,
           );
@@ -474,15 +519,16 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           remainingWithdrawal -= investmentWithdrawal;
 
           if (age >= this.data.noPenaltyWithdraw.age) {
-            const rothWithdrawal = Math.min(
+            const rothWithdrawalAmount = Math.min(
               Math.max(roth, 0),
               remainingWithdrawal,
             );
-            roth -= rothWithdrawal;
-            remainingWithdrawal -= rothWithdrawal;
+            roth -= rothWithdrawalAmount;
+            rothWithdrawal += rothWithdrawalAmount;
+            remainingWithdrawal -= rothWithdrawalAmount;
           }
 
-          const pretaxWithdrawal = Math.min(
+          pretaxWithdrawal = Math.min(
             Math.max(pretaxBalance, 0),
             remainingWithdrawal,
           );
@@ -490,13 +536,26 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           remainingWithdrawal -= pretaxWithdrawal;
 
           if (remainingWithdrawal > 0 && pretaxBalance <= 0) {
-            const rothWithdrawal = Math.min(
+            const rothWithdrawalAmount = Math.min(
               Math.max(roth, 0),
               remainingWithdrawal,
             );
-            roth -= rothWithdrawal;
+            roth -= rothWithdrawalAmount;
+            rothWithdrawal += rothWithdrawalAmount;
           }
         }
+
+        rothPriorYearBalance = yearly.roth;
+        rothPriorYearDistribution = dist;
+        rothPriorYearContribution = roth401k;
+        rothPriorYearWithdrawal = rothWithdrawal;
+        investmentPriorYearBalance = yearly.investment;
+        investmentPriorYearCashFlow = investmentCashFlow;
+        investmentPriorYearWithdrawal = investmentWithdrawal;
+        pretaxPriorYearBalance = yearly.pretaxBalance;
+        pretaxPriorYearContribution = k401;
+        pretaxPriorYearDistribution = dist;
+        pretaxPriorYearWithdrawal = pretaxWithdrawal;
 
         spending.beforeRetirement =
           spending.beforeRetirement * (1 + this.data.inflation / 100);
