@@ -21,7 +21,7 @@ export default defineComponent({
             ]
           : [
               `Previous row balance: ${this.actions.toDollar(yearly.investmentPriorYearBalance)}`,
-              `Post-row cash flow adjustment: ${this.actions.toDollar(yearly.investmentPriorYearCashFlow)}`,
+              `Post-row cash savings: ${this.actions.toDollar(yearly.investmentPriorYearCashFlow)}`,
               `Post-row investment withdrawal: -${this.actions.toDollar(yearly.investmentPriorYearWithdrawal)}`,
               `Balance entering year: ${this.actions.toDollar(yearly.investmentStartingBalance)}`,
             ];
