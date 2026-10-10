@@ -33,14 +33,15 @@ export default defineComponent({
             ]
           : [
               `Previous row balance: ${this.toDisplayDollar(yearly.investmentPriorYearBalance, yearly)}`,
-              `Post-row cash savings: ${this.toDisplayDollar(yearly.investmentPriorYearCashFlow, yearly)}`,
-              `Post-row investment withdrawal: -${this.toDisplayDollar(yearly.investmentPriorYearWithdrawal, yearly)}`,
+              `Previous cash savings: ${this.toDisplayDollar(yearly.investmentPriorYearCashFlow, yearly)}`,
+              `Previous investment withdrawal: -${this.toDisplayDollar(yearly.investmentPriorYearWithdrawal, yearly)}`,
               `Balance entering year: ${this.toDisplayDollar(yearly.investmentStartingBalance, yearly)}`,
             ];
       return [
         ...enteringBalance,
         `Annual return: ${this.toDisplayDollar(yearly.investmentReturn, yearly)}`,
-        `One-time income added: ${this.toDisplayDollar(yearly.investmentContribution, yearly)}`,
+        `One-time incomes: ${this.toDisplayDollar(yearly.investmentContribution, yearly)}`,
+        `One-time expenses: -${this.toDisplayDollar(yearly.additionalExpenseFromInvestment, yearly)}`,
         `Balance shown: ${this.toDisplayDollar(yearly.investment, yearly)}`,
       ].join("\n");
     },
@@ -54,7 +55,7 @@ export default defineComponent({
               `Previous row balance: ${this.toDisplayDollar(yearly.pretaxPriorYearBalance, yearly)}`,
               `401(k) contribution added: ${this.toDisplayDollar(yearly.pretaxPriorYearContribution, yearly)}`,
               `Distribution or conversion: -${this.toDisplayDollar(yearly.pretaxPriorYearDistribution, yearly)}`,
-              `Post-row spending withdrawal: -${this.toDisplayDollar(yearly.pretaxPriorYearWithdrawal, yearly)}`,
+              `Previous spending withdrawal: -${this.toDisplayDollar(yearly.pretaxPriorYearWithdrawal, yearly)}`,
               `Balance entering year: ${this.toDisplayDollar(yearly.pretaxStartingBalance, yearly)}`,
             ];
       return [
@@ -91,7 +92,7 @@ export default defineComponent({
       ].join("\n");
     },
   },
-  template: `
+  template: /* html */ `
     <div class="row">
       <div class="form-check col-1">
         <input class="form-check-input" id="col-age" type="checkbox" v-model="state.data.columns.age" />

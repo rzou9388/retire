@@ -217,6 +217,16 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         this.data.contrib.employerPercent,
         this.data.contrib.employerMatchUpTo,
       );
+      this.data.contrib.spouse.totalPercent = calculateTotal401kWithMatch(
+        this.data.contrib.spouse.employeePercent,
+        this.data.contrib.spouse.employerPercent,
+        this.data.contrib.spouse.employerMatchUpTo,
+      );
+      this.data.contrib.spouse.rothTotalPercent = calculateTotal401kWithMatch(
+        this.data.contrib.spouse.roth401kPercent,
+        this.data.contrib.spouse.employerPercent,
+        this.data.contrib.spouse.employerMatchUpTo,
+      );
 
       this.calculateYearly();
       this.saveState();
@@ -261,7 +271,9 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       let age = this.data.person.age;
       let year = new Date().getFullYear();
       let pretaxBalance = this.data.person.pretaxBalance;
-      let salary = this.data.person.salary;
+      let selfSalary = this.data.person.salary;
+      let spouseSalary = this.data.person.spouse.salary;
+      let salary = selfSalary + spouseSalary;
       let investment = this.data.person.investment;
       let roth = this.data.person.roth;
       let investmentPriorYearBalance = null;
@@ -288,11 +300,19 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         const investmentStartingBalance = investment;
         let investmentContribution = 0;
         if (age < this.data.person.retirement.age) {
-          salary = calculateGain(
+          selfSalary = calculateGain(
             i === 0,
-            salary,
-            this.data.meritIncrease * calculatePercentOfMonthsLeftInYear(year),
+            selfSalary,
+            this.data.person.meritIncrease *
+              calculatePercentOfMonthsLeftInYear(year),
           );
+          spouseSalary = calculateGain(
+            i === 0,
+            spouseSalary,
+            this.data.person.spouse.meritIncrease *
+              calculatePercentOfMonthsLeftInYear(year),
+          );
+          salary = selfSalary + spouseSalary;
           pretaxBalance = calculateGain(
             i === 0,
             pretaxBalance,
@@ -315,6 +335,8 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
             spending.beforeRetirement *
             calculatePercentOfMonthsLeftInYear(year);
         } else {
+          selfSalary = 0;
+          spouseSalary = 0;
           salary = 0;
           pretaxBalance = calculateGain(
             i === 0,
@@ -344,6 +366,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         const pretaxReturn = pretaxBalance - pretaxStartingBalance;
         const rothReturn = roth - rothStartingBalance;
         let additionalExpense = 0;
+        let additionalExpenseFromInvestment = 0;
         for (const contribution of this.data.investmentContributions ?? []) {
           if (Number(contribution.age) === age) {
             const amount = Number(contribution.amount);
@@ -357,26 +380,31 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
             }
           }
         }
+        additionalExpenseFromInvestment =
+          age < this.data.person.retirement.age
+            ? additionalExpense
+            : Math.min(Math.max(investment, 0), additionalExpense);
+        investment -= additionalExpenseFromInvestment;
         spendingAmount += additionalExpense;
         const investmentReturn =
-          investment - investmentStartingBalance - investmentContribution;
+          investment -
+          investmentStartingBalance -
+          investmentContribution +
+          additionalExpenseFromInvestment;
 
+        const monthsLeft = calculatePercentOfMonthsLeftInYear(year);
         const k401 =
-          salary *
-          (this.data.contrib.totalPercent / 100) *
-          calculatePercentOfMonthsLeftInYear(year);
+          (selfSalary * (this.data.contrib.totalPercent / 100) +
+            spouseSalary * (this.data.contrib.spouse.totalPercent / 100)) *
+          monthsLeft;
         const k401Employee =
-          salary *
-          (this.data.contrib.employeePercent / 100) *
-          calculatePercentOfMonthsLeftInYear(year);
+          (selfSalary * (this.data.contrib.employeePercent / 100) +
+            spouseSalary * (this.data.contrib.spouse.employeePercent / 100)) *
+          monthsLeft;
         const roth401k =
-          salary *
-          (this.data.contrib.rothTotalPercent / 100) *
-          calculatePercentOfMonthsLeftInYear(year);
-        const roth401kEmployee =
-          salary *
-          (this.data.contrib.roth401kPercent / 100) *
-          calculatePercentOfMonthsLeftInYear(year);
+          (selfSalary * (this.data.contrib.rothTotalPercent / 100) +
+            spouseSalary * (this.data.contrib.spouse.rothTotalPercent / 100)) *
+          monthsLeft;
 
         let taxableEarnedIncome = salary - k401Employee;
         let taxableOrdinaryIncome = taxableEarnedIncome;
@@ -422,7 +450,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         );
         let spendingAfterSS = spendingAmount - ss;
 
-        const fica = calculateFica(salary, year);
+        const fica = calculateFica(selfSalary, year, spouseSalary);
         const taxableSS = calculateSSToTax(taxableEarnedIncome, ss);
         const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(
           taxableOrdinaryIncome + taxableSS,
@@ -479,6 +507,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           investmentReturn,
           investmentContribution,
           additionalExpense,
+          additionalExpenseFromInvestment,
           investmentPriorYearBalance,
           investmentPriorYearCashFlow,
           investmentPriorYearWithdrawal,
@@ -517,11 +546,13 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
               roth401k -
               (spendingAfterSS - additionalExpense) -
               tax) *
-              calculatePercentOfMonthsLeftInYear(year - 1) -
-            additionalExpense;
+            calculatePercentOfMonthsLeftInYear(year - 1);
           investment += investmentCashFlow;
         } else {
-          let remainingWithdrawal = Math.max(tax + spendingAfterSS, 0);
+          let remainingWithdrawal = Math.max(
+            tax + spendingAfterSS - additionalExpenseFromInvestment,
+            0,
+          );
           investmentWithdrawal = Math.min(
             Math.max(investment, 0),
             remainingWithdrawal,

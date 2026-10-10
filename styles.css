@@ -54,6 +54,14 @@ label {
     margin-bottom: 4px;
 }
 
+@media (min-width: 768px) {
+    .income-person-row label {
+        display: flex;
+        align-items: flex-end;
+        min-height: 3rem;
+    }
+}
+
 div.col-4 {
     min-height: 80px
 }

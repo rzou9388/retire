@@ -131,7 +131,7 @@ export function getFicaSSTaxCeiling(year) {
   return sum;
 }
 
-export function calculateFica(salary, year) {
+export function calculateFica(salary, year, spouseSalary = 0) {
   const ssRate = TAX.FICA_SS_RATE;
   const medicareRate = TAX.FICA_MEDICARE_RATE;
   const medicareCeiling = TAX.FICA_MEDICARE_CEILING;
@@ -139,17 +139,16 @@ export function calculateFica(salary, year) {
   const ssTaxCeiling = getFicaSSTaxCeiling(year);
 
   let fica = 0;
-  if (salary > ssTaxCeiling) {
-    fica += ssTaxCeiling * ssRate;
-  } else {
-    fica += salary * ssRate;
-  }
+  fica +=
+    (Math.min(salary, ssTaxCeiling) + Math.min(spouseSalary, ssTaxCeiling)) *
+    ssRate;
 
-  if (salary <= medicareCeiling) {
-    fica += salary * medicareRate;
+  const combinedSalary = salary + spouseSalary;
+  if (combinedSalary <= medicareCeiling) {
+    fica += combinedSalary * medicareRate;
   } else {
     fica += medicareCeiling * medicareRate;
-    fica += (salary - medicareCeiling) * medicareRateOverCeiling;
+    fica += (combinedSalary - medicareCeiling) * medicareRateOverCeiling;
   }
   return fica;
 }

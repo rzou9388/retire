@@ -4,46 +4,91 @@ export default defineComponent({
   name: "IncomeTab",
   props: ["state", "actions"],
   template: /* html */ `
-    <div class="row">
-      <h6>Salary based income and savings (you and spouse)</h6>
-      <div class="col-4">
-        <label for="currentCombinedSalary">Current Combined Salary:</label>
+    <div class="row income-person-row">
+      <h6>Self</h6>
+      <div class="col-md-2">
+        <label for="selfSalary">Annual Salary:</label>
         <div class="input-group">
-          <input id="currentCombinedSalary" class="form-control" :value="actions.toDollar(state.data.person.salary)" @focus="e => { e.target.value = String(state.data.person.salary ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.salary = parsed; e.target.value = actions.toDollar(parsed); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.salary ?? 0); } }" type="text" min="0" step="1000" />
+          <input id="selfSalary" class="form-control" :value="actions.toDollar(state.data.person.salary)" @focus="e => { e.target.value = String(state.data.person.salary ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.salary = parsed; e.target.value = actions.toDollar(parsed); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.salary ?? 0); } }" type="text" min="0" step="1000" />
         </div>
       </div>
-      <div class="col-4">
-        <label for="meritIncrease">Merit Increase:</label>
+      <div class="col-md-2">
+        <label for="selfMeritIncrease">Merit Increase:</label>
         <div class="input-group">
-          <input id="meritIncrease" class="form-control" v-model="state.data.meritIncrease" type="number" min="0" step="1" @change="actions.calculate" />
+          <input id="selfMeritIncrease" class="form-control" v-model="state.data.person.meritIncrease" type="number" min="0" step="1" @change="actions.calculate" />
           <span class="input-group-text">%</span>
         </div>
       </div>
-      <div class="col-4">
-        <label for="employee401k">Employee 401k Contribution:</label>
+      <div class="col-md-2">
+        <label for="employee401k">401(k) Contribution:</label>
         <div class="input-group">
-          <input id="employee401k" class="form-control" v-model="state.data.contrib.employeePercent" type="number" min="1" step="1" @change="actions.calculate" />
+          <input id="employee401k" class="form-control" v-model="state.data.contrib.employeePercent" type="number" min="0" step="1" @change="actions.calculate" />
           <span class="input-group-text">%</span>
         </div>
       </div>
-      <div class="col-4">
-        <label for="employeeRoth401k">Employee <b>Roth</b> 401k Contribution:</label>
+      <div class="col-md-2">
+        <label for="employeeRoth401k">Roth 401(k) Contribution:</label>
         <div class="input-group">
-          <input id="employeeRoth401k" class="form-control" v-model="state.data.contrib.roth401kPercent" type="number" min="1" step="1" @change="actions.calculate" />
+          <input id="employeeRoth401k" class="form-control" v-model="state.data.contrib.roth401kPercent" type="number" min="0" step="1" @change="actions.calculate" />
           <span class="input-group-text">%</span>
         </div>
       </div>
-      <div class="col-4">
-        <label for="employerMatch">Employer 401k Match:</label>
+      <div class="col-md-2">
+        <label for="employerMatch">Employer Match:</label>
         <div class="input-group">
           <input id="employerMatch" class="form-control" v-model="state.data.contrib.employerPercent" type="number" min="0" step="1" @change="actions.calculate" />
           <span class="input-group-text">%</span>
         </div>
       </div>
-      <div class="col-4">
-        <label for="matchUpTo">Employer 401k Match Up To:</label>
+      <div class="col-md-2">
+        <label for="matchUpTo">Match Up To:</label>
         <div class="input-group">
           <input id="matchUpTo" class="form-control" v-model="state.data.contrib.employerMatchUpTo" type="number" min="0" max="10" step="1" @change="actions.calculate" />
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+    </div>
+    <hr />
+    <div class="row income-person-row">
+      <h6>Spouse</h6>
+      <div class="col-md-2">
+        <label for="spouseSalary">Annual Salary:</label>
+        <div class="input-group">
+          <input id="spouseSalary" class="form-control" :value="actions.toDollar(state.data.person.spouse.salary)" @focus="e => { e.target.value = String(state.data.person.spouse.salary ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.spouse.salary = parsed; e.target.value = actions.toDollar(parsed); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.spouse.salary ?? 0); } }" type="text" min="0" step="1000" />
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label for="spouseMeritIncrease">Merit Increase:</label>
+        <div class="input-group">
+          <input id="spouseMeritIncrease" class="form-control" v-model="state.data.person.spouse.meritIncrease" type="number" min="0" step="1" @change="actions.calculate" />
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label for="spouse401k">401(k) Contribution:</label>
+        <div class="input-group">
+          <input id="spouse401k" class="form-control" v-model="state.data.contrib.spouse.employeePercent" type="number" min="0" step="1" @change="actions.calculate" />
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label for="spouseRoth401k">Roth 401(k) Contribution:</label>
+        <div class="input-group">
+          <input id="spouseRoth401k" class="form-control" v-model="state.data.contrib.spouse.roth401kPercent" type="number" min="0" step="1" @change="actions.calculate" />
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label for="spouseEmployerMatch">Employer Match:</label>
+        <div class="input-group">
+          <input id="spouseEmployerMatch" class="form-control" v-model="state.data.contrib.spouse.employerPercent" type="number" min="0" step="1" @change="actions.calculate" />
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label for="spouseMatchUpTo">Match Up To:</label>
+        <div class="input-group">
+          <input id="spouseMatchUpTo" class="form-control" v-model="state.data.contrib.spouse.employerMatchUpTo" type="number" min="0" max="10" step="1" @change="actions.calculate" />
           <span class="input-group-text">%</span>
         </div>
       </div>
@@ -99,19 +144,20 @@ export default defineComponent({
     <hr />
     <div>
       <h5>Summary</h5>
-      Your current household earned income is <b>{{actions.toDollar(state.data.person.salary)}}</b>, you
-      expect annual merit increase of <b>{{actions.toPercent(state.data.meritIncrease)}}</b>.
+      Your current household earned income is <b>{{actions.toDollar(state.data.person.salary + state.data.person.spouse.salary)}}</b>, you
+      expect annual merit increases of <b>{{actions.toPercent(state.data.person.meritIncrease)}}</b> for you and
+      <b>{{actions.toPercent(state.data.person.spouse.meritIncrease)}}</b> for your spouse.
       <div v-if="state.data.contrib.totalPercent > 0">
-        Your current tax deferred retirement accounts have <b>{{actions.toDollar(state.data.person.pretaxBalance)}}</b>, you are contributing
-        <b>{{actions.toPercent(state.data.contrib.employeePercent)}}</b> of your salary to 401k, and your employer contributes
-        <b>{{actions.toPercent(state.data.contrib.employerPercent)}}</b> of your contribution up to <b>{{actions.toPercent(state.data.contrib.employerMatchUpTo)}}</b>, total contribution is <b>{{actions.toPercent(state.data.contrib.totalPercent)}}</b> of your salary each year. Your current year 401k contribution calculates to be
-        <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.totalPercent / 100)}}</b>.
+        Your estimated annual 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.totalPercent / 100)}}</b> for you.
       </div>
       <div v-if="state.data.contrib.rothTotalPercent > 0">
-        Your current Roth retirement accounts have <b>{{actions.toDollar(state.data.person.roth)}}</b>, you are contributing
-        <b>{{actions.toPercent(state.data.contrib.roth401kPercent)}}</b> of your salary to Roth 401k, and your employer contributes
-        <b>{{actions.toPercent(state.data.contrib.employerPercent)}}</b> of your contribution up to <b>{{actions.toPercent(state.data.contrib.employerMatchUpTo)}}</b>, total contribution is <b>{{actions.toPercent(state.data.contrib.rothTotalPercent)}}</b> of your salary each year. Your current year Roth 401k contribution calculates to be
-        <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.rothTotalPercent / 100)}}</b>.
+        Your estimated annual Roth 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.rothTotalPercent / 100)}}</b> for you.
+      </div>
+      <div v-if="state.data.person.spouse.salary > 0 && state.data.contrib.spouse.totalPercent > 0">
+        Your spouse's estimated annual 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.totalPercent / 100)}}</b>.
+      </div>
+      <div v-if="state.data.person.spouse.salary > 0 && state.data.contrib.spouse.rothTotalPercent > 0">
+        Your spouse's estimated annual Roth 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.rothTotalPercent / 100)}}</b>.
       </div>
     </div>
   `,

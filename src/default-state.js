@@ -75,7 +75,6 @@ export function createDefaultAppState() {
       },
       noPenaltyWithdraw: { age: 60 },
       inflation: 2.8,
-      meritIncrease: 2,
       medicare: { age: 65, premiums: [] },
       rmd: {
         age: 75,
@@ -90,11 +89,21 @@ export function createDefaultAppState() {
         roth401kPercent: 0,
         rothTotalPercent: 0,
         employerMatchUpTo: 6,
+        spouse: {
+          employeePercent: 6,
+          employerPercent: 50,
+          totalPercent: 0,
+          roth401kPercent: 0,
+          rothTotalPercent: 0,
+          employerMatchUpTo: 6,
+        },
       },
       person: {
         age: 50,
         pretaxBalance: 500000,
         salary: 150000,
+        meritIncrease: 2,
+        spouse: { salary: 0, meritIncrease: 2 },
         retirement: {
           age: 60,
           year: 0,
@@ -123,6 +132,25 @@ export function loadInitialAppState() {
     savedData.medicare.premiums = [];
     savedData.yearlyData = [];
     savedData.investmentContributions ??= [];
+    const legacyMeritIncrease = savedData.meritIncrease ?? 2;
+    savedData.person.meritIncrease ??= legacyMeritIncrease;
+    savedData.person.spouse ??= { salary: 0 };
+    savedData.person.spouse.salary ??= 0;
+    savedData.person.spouse.meritIncrease ??= legacyMeritIncrease;
+    savedData.contrib.spouse ??= {
+      employeePercent: 6,
+      employerPercent: 50,
+      totalPercent: 0,
+      roth401kPercent: 0,
+      rothTotalPercent: 0,
+      employerMatchUpTo: 6,
+    };
+    savedData.contrib.spouse.employeePercent ??= 6;
+    savedData.contrib.spouse.employerPercent ??= 50;
+    savedData.contrib.spouse.totalPercent ??= 0;
+    savedData.contrib.spouse.roth401kPercent ??= 0;
+    savedData.contrib.spouse.rothTotalPercent ??= 0;
+    savedData.contrib.spouse.employerMatchUpTo ??= 6;
     return { data: savedData };
   }
   return createDefaultAppState();
