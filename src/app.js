@@ -553,6 +553,15 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
             tax + spendingAfterSS - additionalExpenseFromInvestment,
             0,
           );
+          if (age >= this.data.noPenaltyWithdraw.age) {
+            pretaxWithdrawal = Math.min(
+              Math.max(pretaxBalance, 0),
+              remainingWithdrawal,
+            );
+            pretaxBalance -= pretaxWithdrawal;
+            remainingWithdrawal -= pretaxWithdrawal;
+          }
+
           investmentWithdrawal = Math.min(
             Math.max(investment, 0),
             remainingWithdrawal,
@@ -560,12 +569,14 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           investment -= investmentWithdrawal;
           remainingWithdrawal -= investmentWithdrawal;
 
-          pretaxWithdrawal = Math.min(
-            Math.max(pretaxBalance, 0),
-            remainingWithdrawal,
-          );
-          pretaxBalance -= pretaxWithdrawal;
-          remainingWithdrawal -= pretaxWithdrawal;
+          if (age < this.data.noPenaltyWithdraw.age) {
+            pretaxWithdrawal = Math.min(
+              Math.max(pretaxBalance, 0),
+              remainingWithdrawal,
+            );
+            pretaxBalance -= pretaxWithdrawal;
+            remainingWithdrawal -= pretaxWithdrawal;
+          }
 
           if (remainingWithdrawal > 0 && pretaxBalance <= 0) {
             const rothWithdrawalAmount = Math.min(
