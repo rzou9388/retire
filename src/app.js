@@ -272,7 +272,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       const yearsToCalc = this.data.person.deceased.age - this.data.person.age;
       let age = this.data.person.age;
       let year = new Date().getFullYear();
-      let pretaxBalance = this.data.person.pretaxBalance;
+      let pretaxBalance = Math.max(this.data.person.pretaxBalance, 0);
       let selfSalary = this.data.person.salary;
       let spouseSalary = this.data.person.spouse.salary;
       let salary = selfSalary + spouseSalary;
@@ -453,40 +453,118 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         let spendingAfterSS = spendingAmount - ss;
 
         const fica = calculateFica(selfSalary, year, spouseSalary);
-        const taxableSS = calculateSSToTax(taxableEarnedIncome, ss);
-        const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(
-          taxableOrdinaryIncome + taxableSS,
-          year,
-        );
-        let tax = ordinaryIncomeTax + fica;
-        const capitalGainTax = calculateCapitalGainTax({
-          age,
-          year,
-          tax,
-          k401kWithdraw: taxableOrdinaryIncome,
-          spendingAmount,
-          investment,
-          state: this,
-        });
-        tax += capitalGainTax;
-        let stateTax =
-          age < this.data.person.retirement.age
-            ? taxableOrdinaryIncome *
-              (this.data.tax.state.beforeRetirement / 100)
-            : taxableOrdinaryIncome *
-              (this.data.tax.state.afterRetirement / 100);
-        tax += stateTax;
+        const allocateWithdrawals = (cashNeeded) => {
+          let remaining = Math.max(cashNeeded, 0);
+          let pretaxWithdrawal = 0;
+          let investmentWithdrawal = 0;
+          let rothWithdrawal = 0;
+          const takePretax = () => {
+            const pretaxAvailable = Math.max(pretaxBalance + k401 - dist, 0);
+            pretaxWithdrawal = Math.min(pretaxAvailable, remaining);
+            remaining -= pretaxWithdrawal;
+          };
+          const takeInvestment = () => {
+            investmentWithdrawal = Math.min(Math.max(investment, 0), remaining);
+            remaining -= investmentWithdrawal;
+          };
+          const takeRoth = () => {
+            rothWithdrawal = Math.min(Math.max(roth, 0), remaining);
+            remaining -= rothWithdrawal;
+          };
 
-        let medicareBPremium = 0;
-        if (age >= this.data.medicare.age) {
-          medicareBPremium =
-            getMedicarePremiumsByMagi(
-              taxableOrdinaryIncome + taxableSS,
-              year - 2,
-              this,
-            ) * 24;
-          spendingAfterSS += medicareBPremium;
+          if (age >= this.data.person.retirement.age) {
+            if (age >= this.data.noPenaltyWithdraw.age) {
+              takePretax();
+              takeInvestment();
+            } else {
+              takeInvestment();
+              takePretax();
+            }
+            takeRoth();
+          }
+
+          return { pretaxWithdrawal, investmentWithdrawal, rothWithdrawal };
+        };
+        const calculateTaxesForWithdrawals = ({
+          pretaxWithdrawal,
+          investmentWithdrawal,
+        }) => {
+          const withdrawalTaxableIncome =
+            taxableOrdinaryIncome + pretaxWithdrawal;
+          const taxableSS = calculateSSToTax(withdrawalTaxableIncome, ss);
+          const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(
+            withdrawalTaxableIncome + taxableSS,
+            year,
+          );
+          const capitalGainTax = calculateCapitalGainTax({
+            age,
+            year,
+            taxableIncome: withdrawalTaxableIncome + taxableSS,
+            investmentWithdrawal,
+            state: this,
+          });
+          const stateTax =
+            withdrawalTaxableIncome *
+            (age < this.data.person.retirement.age
+              ? this.data.tax.state.beforeRetirement / 100
+              : this.data.tax.state.afterRetirement / 100);
+          const medicareBPremium =
+            age >= this.data.medicare.age
+              ? getMedicarePremiumsByMagi(
+                  withdrawalTaxableIncome + taxableSS,
+                  year - 2,
+                  this,
+                ) * 24
+              : 0;
+
+          return {
+            taxableSS,
+            ordinaryIncomeTax,
+            capitalGainTax,
+            stateTax,
+            medicareBPremium,
+            tax: ordinaryIncomeTax + fica + capitalGainTax + stateTax,
+          };
+        };
+
+        let withdrawals = allocateWithdrawals(0);
+        for (let i = 0; i < 50; i++) {
+          const taxes = calculateTaxesForWithdrawals(withdrawals);
+          const nextWithdrawals = allocateWithdrawals(
+            taxes.tax +
+              spendingAfterSS +
+              taxes.medicareBPremium -
+              additionalExpenseFromInvestment,
+          );
+          if (
+            Math.abs(
+              nextWithdrawals.pretaxWithdrawal - withdrawals.pretaxWithdrawal,
+            ) < 0.01 &&
+            Math.abs(
+              nextWithdrawals.investmentWithdrawal -
+                withdrawals.investmentWithdrawal,
+            ) < 0.01 &&
+            Math.abs(
+              nextWithdrawals.rothWithdrawal - withdrawals.rothWithdrawal,
+            ) < 0.01
+          ) {
+            withdrawals = nextWithdrawals;
+            break;
+          }
+          withdrawals = nextWithdrawals;
         }
+
+        const { pretaxWithdrawal, investmentWithdrawal, rothWithdrawal } =
+          withdrawals;
+        const {
+          taxableSS,
+          ordinaryIncomeTax,
+          capitalGainTax,
+          stateTax,
+          medicareBPremium,
+          tax,
+        } = calculateTaxesForWithdrawals(withdrawals);
+        spendingAfterSS += medicareBPremium;
 
         const yearly = {
           age,
@@ -535,14 +613,15 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
 
         age++;
         year++;
-        roth = roth + dist + roth401k;
-        pretaxBalance = pretaxBalance + k401 - dist;
-        let pretaxWithdrawal = 0;
-        let rothWithdrawal = 0;
+        roth = roth + dist + roth401k - rothWithdrawal;
+        pretaxBalance = Math.max(
+          pretaxBalance + k401 - dist - pretaxWithdrawal,
+          0,
+        );
+        investment -= investmentWithdrawal;
         let investmentCashFlow = 0;
-        let investmentWithdrawal = 0;
 
-        if (age < this.data.person.retirement.age) {
+        if (age <= this.data.person.retirement.age) {
           investmentCashFlow =
             (taxableEarnedIncome -
               roth401k -
@@ -550,44 +629,6 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
               tax) *
             calculatePercentOfMonthsLeftInYear(year - 1);
           investment += investmentCashFlow;
-        } else {
-          let remainingWithdrawal = Math.max(
-            tax + spendingAfterSS - additionalExpenseFromInvestment,
-            0,
-          );
-          if (age >= this.data.noPenaltyWithdraw.age) {
-            pretaxWithdrawal = Math.min(
-              Math.max(pretaxBalance, 0),
-              remainingWithdrawal,
-            );
-            pretaxBalance -= pretaxWithdrawal;
-            remainingWithdrawal -= pretaxWithdrawal;
-          }
-
-          investmentWithdrawal = Math.min(
-            Math.max(investment, 0),
-            remainingWithdrawal,
-          );
-          investment -= investmentWithdrawal;
-          remainingWithdrawal -= investmentWithdrawal;
-
-          if (age < this.data.noPenaltyWithdraw.age) {
-            pretaxWithdrawal = Math.min(
-              Math.max(pretaxBalance, 0),
-              remainingWithdrawal,
-            );
-            pretaxBalance -= pretaxWithdrawal;
-            remainingWithdrawal -= pretaxWithdrawal;
-          }
-
-          if (remainingWithdrawal > 0 && pretaxBalance <= 0) {
-            const rothWithdrawalAmount = Math.min(
-              Math.max(roth, 0),
-              remainingWithdrawal,
-            );
-            roth -= rothWithdrawalAmount;
-            rothWithdrawal += rothWithdrawalAmount;
-          }
         }
 
         rothPriorYearBalance = yearly.roth;

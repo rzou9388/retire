@@ -102,7 +102,7 @@ export default defineComponent({
       <div class="col-4">
         <label :for="'monthlySocialSecurity'">Monthly Social Security Income (age <b>{{state.data.person.ss.age}}</b>):</label>
         <div class="input-group">
-          <input id="monthlySocialSecurity" class="form-control" :value="actions.toDollar(state.data.person.ss.perMonth)" @focus="e => { e.target.value = String(state.data.person.ss.perMonth ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.ss.perMonth = parsed; e.target.value = actions.toDollar(parsed); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.ss.perMonth ?? 0); } }" type="text" min="0" step="100" />
+          <input id="monthlySocialSecurity" class="form-control" :value="actions.toDollar(state.data.person.ss.perMonth, 2)" @focus="e => { e.target.value = String(state.data.person.ss.perMonth ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.ss.perMonth = parsed; e.target.value = actions.toDollar(parsed, 2); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.ss.perMonth ?? 0, 2); } }" type="text" min="0" step="100" />
         </div>
       </div>
     </div>

@@ -7,14 +7,14 @@ export default defineComponent({
     return { showTodaysDollars: false };
   },
   methods: {
-    toDisplayDollar(amount, yearly) {
+    toDisplayDollar(amount, yearly, fractionDigits = 0) {
       const currentYear = new Date().getFullYear();
       const yearsFromToday = yearly.year - currentYear;
       const inflationRate = Number(this.state.data.inflation) / 100;
       const adjustedAmount = this.showTodaysDollars
         ? amount / (1 + inflationRate) ** yearsFromToday
         : amount;
-      return this.actions.toDollar(adjustedAmount);
+      return this.actions.toDollar(adjustedAmount, fractionDigits);
     },
     getTaxTooltip(yearly) {
       return [

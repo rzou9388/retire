@@ -80,35 +80,30 @@ export function getRowTitle(age, state) {
 export function calculateCapitalGainTax({
   age,
   year,
-  tax,
-  k401kWithdraw,
-  spendingAmount,
-  investment,
+  taxableIncome,
+  investmentWithdrawal,
   state,
 }) {
   if (age < state.data.person.retirement.age) return 0;
-  if (age >= state.data.noPenaltyWithdraw.age) return 0;
+  if (investmentWithdrawal <= 0) return 0;
 
-  const investmentWithdraws =
-    (spendingAmount + tax + spendingAmount * 0.15) / 2;
-  const taxable = k401kWithdraw + investmentWithdraws;
-
-  if (investment < investmentWithdraws) return 0;
-
-  let newTax = 0;
+  const taxableGain = investmentWithdrawal / 2;
+  const taxable = taxableIncome + taxableGain;
   const noTaxCeiling = getCapitalGain0TaxCeiling(year, state.data.inflation);
-  if (taxable > noTaxCeiling) {
-    newTax += investmentWithdraws * 0.15;
-  }
-  if (taxable > 250000) {
-    if (k401kWithdraw >= 250000) {
-      newTax += (investmentWithdraws - 250000) * 0.038;
-    } else {
-      newTax += (250000 - k401kWithdraw + investmentWithdraws) * 0.038;
-    }
-  }
-  newTax += investmentWithdraws * (state.data.tax.state.afterRetirement / 100);
-  return newTax;
+  const gainsAboveNoTaxCeiling = Math.min(
+    taxableGain,
+    Math.max(taxable - noTaxCeiling, 0),
+  );
+  const gainsSubjectToMedicareSurtax = Math.min(
+    taxableGain,
+    Math.max(taxable - TAX.MEDICARE_SURTAX_THRESHOLD, 0),
+  );
+
+  return (
+    gainsAboveNoTaxCeiling * TAX.CAPITAL_GAIN_RATE +
+    gainsSubjectToMedicareSurtax * TAX.MEDICARE_SURTAX_RATE +
+    taxableGain * (state.data.tax.state.afterRetirement / 100)
+  );
 }
 
 export function getCapitalGain0TaxCeiling(year, inflation) {
