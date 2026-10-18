@@ -125,7 +125,141 @@ export function createDefaultAppState() {
   };
 }
 
+export function serializeUserData(data) {
+  return {
+    columns: { ...data.columns },
+    investmentContributions: (data.investmentContributions ?? []).map(
+      ({ label, type, age, amount }) => ({ label, type, age, amount }),
+    ),
+    spending: { ...data.spending },
+    annualReturn: { ...data.annualReturn },
+    rothConversion: pickFields(data.rothConversion, [
+      "age",
+      "bracket",
+      "offset",
+    ]),
+    rothConversion2: pickFields(data.rothConversion2, [
+      "age",
+      "bracket",
+      "offset",
+    ]),
+    noPenaltyWithdraw: { age: data.noPenaltyWithdraw.age },
+    inflation: data.inflation,
+    medicare: { age: data.medicare.age },
+    rmd: { age: data.rmd.age },
+    contrib: {
+      employeePercent: data.contrib.employeePercent,
+      employerPercent: data.contrib.employerPercent,
+      roth401kPercent: data.contrib.roth401kPercent,
+      employerMatchUpTo: data.contrib.employerMatchUpTo,
+      spouse: {
+        employeePercent: data.contrib.spouse.employeePercent,
+        employerPercent: data.contrib.spouse.employerPercent,
+        roth401kPercent: data.contrib.spouse.roth401kPercent,
+        employerMatchUpTo: data.contrib.spouse.employerMatchUpTo,
+      },
+    },
+    person: {
+      age: data.person.age,
+      pretaxBalance: data.person.pretaxBalance,
+      salary: data.person.salary,
+      meritIncrease: data.person.meritIncrease,
+      spouse: {
+        salary: data.person.spouse.salary,
+        meritIncrease: data.person.spouse.meritIncrease,
+      },
+      retirement: { age: data.person.retirement.age },
+      deceased: { age: data.person.deceased.age },
+      investment: data.person.investment,
+      roth: data.person.roth,
+      ss: { age: data.person.ss.age, perMonth: data.person.ss.perMonth },
+    },
+    tax: { state: { ...data.tax.state } },
+  };
+}
+
+export function encodeUserDataForUrl(data) {
+  const bytes = new TextEncoder().encode(JSON.stringify(data));
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  }
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function pickFields(value, fields) {
+  return Object.fromEntries(fields.map((field) => [field, value[field]]));
+}
+
+function mergeWithDefaults(defaultValue, inputValue) {
+  if (Array.isArray(defaultValue)) {
+    return Array.isArray(inputValue) ? inputValue : defaultValue;
+  }
+  if (defaultValue && typeof defaultValue === "object") {
+    const input =
+      inputValue && typeof inputValue === "object" && !Array.isArray(inputValue)
+        ? inputValue
+        : {};
+    return Object.fromEntries(
+      Object.entries(defaultValue).map(([key, value]) => [
+        key,
+        mergeWithDefaults(value, input[key]),
+      ]),
+    );
+  }
+  return inputValue ?? defaultValue;
+}
+
+function loadQueryData() {
+  const payload = new URLSearchParams(window.location.search).get("data");
+  if (!payload) return null;
+
+  try {
+    const inputData = payload.trimStart().startsWith("{")
+      ? JSON.parse(payload)
+      : JSON.parse(decodeUserDataFromUrl(payload));
+    if (
+      !inputData ||
+      typeof inputData !== "object" ||
+      Array.isArray(inputData)
+    ) {
+      return null;
+    }
+    const appState = createDefaultAppState();
+    appState.data = mergeWithDefaults(appState.data, inputData);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("data");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+    return appState;
+  } catch (error) {
+    console.warn("Unable to load retirement data from the URL.", error);
+    return null;
+  }
+}
+
+function decodeUserDataFromUrl(payload) {
+  if (!/^[A-Za-z0-9_-]+$/.test(payload)) {
+    throw new Error("Invalid URL data encoding");
+  }
+  const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+  const bytes = Uint8Array.from(atob(padded), (character) =>
+    character.charCodeAt(0),
+  );
+  return new TextDecoder().decode(bytes);
+}
+
 export function loadInitialAppState() {
+  const queryState = loadQueryData();
+  if (queryState) return queryState;
+
   const savedData = JSON.parse(localStorage.getItem("data"));
   if (savedData) {
     savedData.tax.brackets = [];

@@ -1,5 +1,9 @@
 import { createApp, defineAsyncComponent } from "vue";
-import { loadInitialAppState } from "./default-state.js";
+import {
+  encodeUserDataForUrl,
+  loadInitialAppState,
+  serializeUserData,
+} from "./default-state.js";
 import {
   calculateTotal401kWithMatch,
   calculatePercentOfMonthsLeftInYear,
@@ -90,6 +94,7 @@ const app = createApp({
       activeTab: "age",
       activeSummaryTab: "current",
       containerClass: "col-6",
+      shareStatus: "",
       tabs: [
         { id: "age", label: "Age" },
         { id: "income", label: "Income" },
@@ -105,7 +110,14 @@ const app = createApp({
   },
   template: `
     <div class="container-fluid">
-      <h3>Early Retirement Calculator</h3>
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h3>Early Retirement Calculator</h3>
+        <div class="d-flex align-items-center flex-wrap gap-2">
+          <button class="btn btn-outline-secondary btn-sm" type="button" @click="exportUserData">Export JSON</button>
+          <button class="btn btn-outline-primary btn-sm" type="button" @click="copyShareUrl">Copy share URL</button>
+          <span class="small" role="status">{{ shareStatus }}</span>
+        </div>
+      </div>
       <p>Click <a href="https://github.com/rzou9388/retire">here</a> for source code.</p>
       <hr />
       <div class="row">
@@ -207,6 +219,34 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
     resetData() {
       localStorage.clear();
       window.location.reload();
+    },
+    exportUserData() {
+      const contents = JSON.stringify(serializeUserData(this.data), null, 2);
+      const downloadUrl = URL.createObjectURL(
+        new Blob([contents], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "retirement-plan.json";
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
+      this.shareStatus = "JSON exported.";
+    },
+    async copyShareUrl() {
+      const url = new URL(window.location.href);
+      url.search = "";
+      url.hash = "";
+      url.searchParams.set(
+        "data",
+        encodeUserDataForUrl(serializeUserData(this.data)),
+      );
+
+      try {
+        await navigator.clipboard.writeText(url.toString());
+        this.shareStatus = "Share URL copied.";
+      } catch {
+        window.prompt("Copy this share URL", url.toString());
+      }
     },
     calculate() {
       this.data.contrib.totalPercent = calculateTotal401kWithMatch(
