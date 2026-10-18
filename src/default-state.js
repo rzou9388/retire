@@ -127,7 +127,6 @@ export function createDefaultAppState() {
 
 export function serializeUserData(data) {
   return {
-    columns: { ...data.columns },
     investmentContributions: (data.investmentContributions ?? []).map(
       ({ label, type, age, amount }) => ({ label, type, age, amount }),
     ),
