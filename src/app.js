@@ -116,7 +116,9 @@ const app = createApp({
             </div>
           </nav>
           <div class="tab-content mt-3">
-            <component :is="currentTabComponent" :state="appVm" :actions="actions" />
+            <div v-for="tab in tabs" :key="tab.id" class="tab-pane" :class="{ active: activeTab === tab.id }" v-show="activeTab === tab.id">
+              <component :is="tabComponents[tab.id]" :state="appVm" :actions="actions" />
+            </div>
           </div>
         </div>
         <div class="col-6 overflow-auto">
@@ -132,14 +134,14 @@ const app = createApp({
             </div>
           </nav>
           <div class="tab-content mt-3">
-            <div v-if="activeSummaryTab === 'current'" class="tab-pane fade show active" role="tabpanel">
+            <div v-show="activeSummaryTab === 'current'" class="tab-pane fade show active" role="tabpanel">
               <h6>Current year <b>{{ new Date().getFullYear() }}</b> (age <b>{{ data.person.age }}</b>)</h6>
               <pre>net worth:              <b>{{ toDollar(data.person.roth + data.person.pretaxBalance + data.person.investment) }}</b>
 investment (posttax):   <b>{{ toDollar(data.person.investment) }}</b>
 Roth IRA/401k:          <b>{{ toDollar(data.person.roth) }}</b>
 IRA/401k:               <b>{{ toDollar(data.person.pretaxBalance) }}</b></pre>
             </div>
-            <div v-else-if="activeSummaryTab === 'retirement'" class="tab-pane fade show active" role="tabpanel">
+            <div v-show="activeSummaryTab === 'retirement'" class="tab-pane fade show active" role="tabpanel">
               <h6>Retirement year <b>{{ data.person.retirement.year }}</b> (age <b>{{ data.person.retirement.age }}</b>)</h6>
               <pre>net worth:              <b>{{ toDollar(data.person.retirement.roth + data.person.retirement.pretaxBalance + data.person.retirement.investment) }}</b>
 investment (posttax):   <b>{{ toDollar(data.person.retirement.investment) }}</b>
@@ -150,7 +152,7 @@ IRA/401k:               <b>{{ toDollar(data.person.retirement.pretaxBalance) }}<
               </div>
               <p>After retirement, your spending and taxes are funded from your post-tax investment account until you reach <b>{{ data.noPenaltyWithdraw.age }}</b>.</p>
             </div>
-            <div v-else-if="activeSummaryTab === 'withdraw'" class="tab-pane fade show active" role="tabpanel">
+            <div v-show="activeSummaryTab === 'withdraw'" class="tab-pane fade show active" role="tabpanel">
               <h6>Penalty free withdraw year <b>{{ data.noPenaltyWithdraw.year }}</b> (age <b>{{ data.noPenaltyWithdraw.age }}</b>)</h6>
               <pre>net worth:              <b>{{ toDollar(data.noPenaltyWithdraw.roth + data.noPenaltyWithdraw.pretaxBalance + data.noPenaltyWithdraw.investment) }}</b>
 investment (posttax):   <b>{{ toDollar(data.noPenaltyWithdraw.investment) }}</b>
@@ -158,7 +160,7 @@ Roth IRA/401k:          <b>{{ toDollar(data.noPenaltyWithdraw.roth) }}</b>
 IRA/401k:               <b>{{ toDollar(data.noPenaltyWithdraw.pretaxBalance) }}</b></pre>
               <p>After you reach age <b>{{ data.noPenaltyWithdraw.age }}</b>, you can withdraw from pretax accounts without penalty, though ordinary income tax will apply.</p>
             </div>
-            <div v-else-if="activeSummaryTab === 'rmd'" class="tab-pane fade show active" role="tabpanel">
+            <div v-show="activeSummaryTab === 'rmd'" class="tab-pane fade show active" role="tabpanel">
               <h6>Required Minimum Distribution year <b>{{ data.rmd.year }}</b> (age <b>{{ data.rmd.age }}</b>)</h6>
               <pre>net worth:              <b>{{ toDollar(data.rmd.roth + data.rmd.pretaxBalance + data.rmd.investment) }}</b>
 investment (posttax):   <b>{{ toDollar(data.rmd.investment) }}</b>
@@ -166,7 +168,7 @@ Roth IRA/401k:          <b>{{ toDollar(data.rmd.roth) }}</b>
 IRA/401k:               <b>{{ toDollar(data.rmd.pretaxBalance) }}</b></pre>
               <p>Your pretax retirement accounts will have <b>{{ toDollar(data.rmd.pretaxBalance) }}</b> and your required minimum distribution is <b>{{ toDollar(data.rmd.rmd) }}</b>.</p>
             </div>
-            <div v-else class="tab-pane fade show active" role="tabpanel">
+            <div v-show="activeSummaryTab === 'end'" class="tab-pane fade show active" role="tabpanel">
               <h6>End of life year <b>{{ data.person.deceased.year }}</b> (age <b>{{ data.person.deceased.age }}</b>)</h6>
               <pre>net worth:              <b>{{ toDollar(data.person.deceased.roth + data.person.deceased.pretaxBalance + data.person.deceased.investment) }}</b>
 investment (posttax):   <b>{{ toDollar(data.person.deceased.investment) }}</b>

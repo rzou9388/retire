@@ -39,9 +39,13 @@ footer.app-footer {
 }
 
 @media print {
+    .nav-tabs {
+        display: none !important;
+    }
+
     .tab-content>.tab-pane {
-        display: block;
-        opacity: 100;
+        display: block !important;
+        opacity: 1;
     }
 }
 
