@@ -37,28 +37,52 @@ function updateChart() {
     labels,
     datasets: [
       {
-        label: "Total Balance",
-        data: yearlyData.map((x) => x.investment + x.roth + x.pretaxBalance),
-        borderColor: "rgb(55, 255, 111)",
-        tension: 0.1,
-      },
-      {
         label: "Post-tax Balance",
         data: yearlyData.map((x) => x.investment),
-        borderColor: "rgb(111, 192, 192)",
-        tension: 0.1,
+        borderColor: "#2563eb",
+        backgroundColor: "rgba(37, 99, 235, 0.3)",
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.25,
+        fill: true,
+        stack: "balances",
       },
       {
         label: "Roth Balance",
         data: yearlyData.map((x) => x.roth),
-        borderColor: "rgb(233, 192, 192)",
-        tension: 0.1,
+        borderColor: "#0f9f8f",
+        backgroundColor: "rgba(15, 159, 143, 0.3)",
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.25,
+        fill: true,
+        stack: "balances",
       },
       {
         label: "Pretax Balance",
         data: yearlyData.map((x) => x.pretaxBalance),
-        borderColor: "rgb(75, 244, 192)",
-        tension: 0.1,
+        borderColor: "#8b5cf6",
+        backgroundColor: "rgba(139, 92, 246, 0.3)",
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.25,
+        fill: true,
+        stack: "balances",
+      },
+      {
+        label: "Total Balance",
+        data: yearlyData.map((x) => x.investment + x.roth + x.pretaxBalance),
+        borderColor: "#0f172a",
+        backgroundColor: "#0f172a",
+        borderWidth: 3,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        tension: 0.25,
+        fill: false,
+        stack: "total",
       },
     ],
   };
@@ -66,9 +90,64 @@ function updateChart() {
     type: "line",
     data,
     options: {
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            usePointStyle: true,
+            pointStyle: "circle",
+            padding: 18,
+            color: "#475569",
+            font: { family: "Manrope", weight: "600" },
+          },
+        },
+        tooltip: {
+          backgroundColor: "#0f172a",
+          titleFont: { family: "Manrope", weight: "700" },
+          bodyFont: { family: "Manrope" },
+          padding: 12,
+          callbacks: {
+            title: (items) => `Age ${items[0].label}`,
+            label: (context) =>
+              `${context.dataset.label}: ${new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: "USD",
+                maximumFractionDigits: 0,
+              }).format(context.parsed.y)}`,
+          },
+        },
+      },
       scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { color: "#64748b" },
+          title: {
+            display: true,
+            text: "Age",
+            color: "#64748b",
+            font: { family: "Manrope", weight: "600" },
+          },
+        },
         y: {
-          stacked: false,
+          stacked: true,
+          beginAtZero: true,
+          grid: { color: "rgba(148, 163, 184, 0.2)" },
+          ticks: {
+            color: "#64748b",
+            callback: (value) =>
+              new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: "USD",
+                notation: "compact",
+                maximumFractionDigits: 1,
+              }).format(value),
+          },
         },
       },
     },
@@ -143,7 +222,7 @@ const app = createApp({
           </div>
         </div>
         <div class="col-6 overflow-auto">
-          <div id="chartParent" style="height:450px;display:none"></div>
+          <div id="chartParent" class="chart-panel" style="height:450px;display:none"></div>
           <hr />
           <nav>
             <div class="nav nav-tabs" role="tablist">

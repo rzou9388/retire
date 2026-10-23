@@ -72,6 +72,19 @@ h3 {
     text-underline-offset: 2px;
 }
 
+.chart-panel {
+    box-sizing: border-box;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.chart-panel canvas {
+    max-width: 100%;
+}
+
 .nav-tabs {
     border-bottom: 1px solid #dfe7f1;
     gap: 6px;
