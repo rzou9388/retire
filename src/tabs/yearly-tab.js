@@ -154,9 +154,11 @@ export default defineComponent({
         <input class="form-check-input" id="col-net" type="checkbox" v-model="state.data.columns.netWorth" />
         <label class="form-check-label" for="col-net">Net Worth</label>
       </div>
-      <div class="form-check col">
-        <input class="form-check-input" id="today-dollars" type="checkbox" v-model="showTodaysDollars" />
-        <label class="form-check-label" for="today-dollars">Today's dollars</label>
+    </div>
+    <div class="d-flex justify-content-end align-items-center mb-2">
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" id="today-dollars" type="checkbox" role="switch" v-model="showTodaysDollars" />
+        <label class="form-check-label" for="today-dollars">Display amounts in today's dollars</label>
       </div>
     </div>
     <table class="table table-strip table-hover mt-1">

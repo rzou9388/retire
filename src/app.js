@@ -118,12 +118,15 @@ const app = createApp({
           <span class="small" role="status">{{ shareStatus }}</span>
         </div>
       </div>
-      <div>
-        <span>Click <a href="https://github.com/rzou9388/retire">here</a> for source code.</span>
-
-        <span>Check out this calculator also to crosscheck numbers:
-        <a href="https://my-after-work-plan.my-after-work-plan.workers.dev/">
-        https://my-after-work-plan.my-after-work-plan.workers.dev/</a></span>
+      <div class="app-resource-links" aria-label="Calculator resources">
+        <span class="app-resource-item">
+          Source code:
+          <a href="https://github.com/rzou9388/retire">View on GitHub</a>
+        </span>
+        <span class="app-resource-item">
+          Cross-check your numbers:
+          <a href="https://my-after-work-plan.my-after-work-plan.workers.dev/" target="_blank">Open the other calculator</a>
+        </span>
       </div>
       <hr />
       <div class="row">

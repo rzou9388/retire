@@ -131,10 +131,7 @@ export default defineComponent({
         </div>
         <div class="col-md-3">
           <label :for="'investmentContributionAmount' + index">Amount:</label>
-          <div class="input-group">
-            <span class="input-group-text">$</span>
-            <input :id="'investmentContributionAmount' + index" class="form-control" v-model.number="contribution.amount" type="number" min="0" step="1000" @change="actions.calculate" />
-          </div>
+          <input :id="'investmentContributionAmount' + index" class="form-control" :value="actions.toDollar(contribution.amount)" @focus="e => { e.target.value = String(contribution.amount ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { contribution.amount = parsed; e.target.value = actions.toDollar(parsed); actions.calculate(); } else { e.target.value = actions.toDollar(contribution.amount ?? 0); } }" type="text" min="0" step="1000" />
         </div>
         <div class="col-md-1 d-flex align-items-end justify-content-center">
           <button class="btn btn-outline-danger btn-sm mt-4" type="button" :aria-label="'Remove ' + (contribution.label || 'income or expense')" @click="state.data.investmentContributions.splice(index, 1); actions.calculate()">&times;</button>
