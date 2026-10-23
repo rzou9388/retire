@@ -108,7 +108,7 @@ const app = createApp({
       tabComponents,
     };
   },
-  template: `
+  template: /* html */ `
     <div class="container-fluid">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h3>Early Retirement Calculator</h3>
@@ -118,7 +118,13 @@ const app = createApp({
           <span class="small" role="status">{{ shareStatus }}</span>
         </div>
       </div>
-      <p>Click <a href="https://github.com/rzou9388/retire">here</a> for source code.</p>
+      <div>
+        <span>Click <a href="https://github.com/rzou9388/retire">here</a> for source code.</span>
+
+        <span>Check out this calculator also to crosscheck numbers:
+        <a href="https://my-after-work-plan.my-after-work-plan.workers.dev/">
+        https://my-after-work-plan.my-after-work-plan.workers.dev/</a></span>
+      </div>
       <hr />
       <div class="row">
         <div :class="containerClass">
