@@ -7,7 +7,7 @@ export default defineComponent({
     <details class="info-accordion">
       <summary class="info-accordion-summary">Projected Tax Rates</summary>
       <div class="info-accordion-body">
-        <p>Calculated with historical 1.7% increase in bracket ceilings each year, and accounted for 2025 trump tax (Tax Cuts and Jobs Act) brackets.</p>
+        <p>Based on 2026 federal tax brackets and standard deductions by filing status, with bracket thresholds projected to rise 1.6% per year.</p>
         <table class="table table-hover table-strip">
           <thead>
             <tr>
@@ -22,7 +22,7 @@ export default defineComponent({
                 <table class="table table-sm mb-0">
                   <tr v-for="b in y.data">
                     <td>{{actions.toPercent(b.percent)}}</td>
-                    <td>{{actions.toDollar(b.income)}}</td>
+                    <td>{{Number.isFinite(b.income) ? actions.toDollar(b.income) : 'No upper limit'}}</td>
                   </tr>
                 </table>
               </td>

@@ -13,7 +13,7 @@ export default defineComponent({
         <label for="rothConversionBracket" title="Projected retirement age tax brackets shown">Conversion based on tax bracket</label>
         <select id="rothConversionBracket" @change="actions.calculate" class="form-select" v-model="state.data.rothConversion.bracket">
           <option value="0">0%</option>
-          <option v-for="b in actions.getTaxBracketsForYear(state.data.rothConversion.year).data" :value="b.percent">{{b.percent}}% - {{actions.toDollar(b.income)}}</option>
+          <option v-for="b in actions.getTaxBracketsForYear(state.data.rothConversion.year).data" :value="b.percent">{{b.percent}}% - {{Number.isFinite(b.income) ? actions.toDollar(b.income) : 'No upper limit'}}</option>
         </select>
       </div>
       <div class="col-4">
@@ -35,7 +35,7 @@ export default defineComponent({
         <label for="rothConversion2Bracket">Stage 2 - Tax bracket</label>
         <select id="rothConversion2Bracket" @change="actions.calculate" class="form-select" v-model.number="state.data.rothConversion2.bracket">
           <option :value="0">0%</option>
-          <option v-for="b in actions.getTaxBracketsForYear(state.data.rothConversion2.year).data" :value="b.percent">{{b.percent}}% - {{actions.toDollar(b.income)}}</option>
+          <option v-for="b in actions.getTaxBracketsForYear(state.data.rothConversion2.year).data" :value="b.percent">{{b.percent}}% - {{Number.isFinite(b.income) ? actions.toDollar(b.income) : 'No upper limit'}}</option>
         </select>
       </div>
       <div class="col-4">

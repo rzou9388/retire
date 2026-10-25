@@ -402,7 +402,9 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       let year = new Date().getFullYear();
       let pretaxBalance = Math.max(this.data.person.pretaxBalance, 0);
       let selfSalary = this.data.person.salary;
-      let spouseSalary = this.data.person.spouse.salary;
+      const isJointFiler =
+        this.data.tax.filingStatus === "marriedFilingJointly";
+      let spouseSalary = isJointFiler ? this.data.person.spouse.salary : 0;
       let salary = selfSalary + spouseSalary;
       let investment = this.data.person.investment;
       let roth = this.data.person.roth;
@@ -436,12 +438,14 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
             this.data.person.meritIncrease *
               calculatePercentOfMonthsLeftInYear(year),
           );
-          spouseSalary = calculateGain(
-            i === 0,
-            spouseSalary,
-            this.data.person.spouse.meritIncrease *
-              calculatePercentOfMonthsLeftInYear(year),
-          );
+          if (isJointFiler) {
+            spouseSalary = calculateGain(
+              i === 0,
+              spouseSalary,
+              this.data.person.spouse.meritIncrease *
+                calculatePercentOfMonthsLeftInYear(year),
+            );
+          }
           salary = selfSalary + spouseSalary;
           pretaxBalance = calculateGain(
             i === 0,
@@ -580,7 +584,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         );
         let spendingAfterSS = spendingAmount - ss;
 
-        const fica = calculateFica(selfSalary, year, spouseSalary);
+        const fica = calculateFica(selfSalary, year, this, spouseSalary);
         const allocateWithdrawals = (cashNeeded) => {
           let remaining = Math.max(cashNeeded, 0);
           let pretaxWithdrawal = 0;
@@ -619,7 +623,11 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         }) => {
           const withdrawalTaxableIncome =
             taxableOrdinaryIncome + pretaxWithdrawal;
-          const taxableSS = calculateSSToTax(withdrawalTaxableIncome, ss);
+          const taxableSS = calculateSSToTax(
+            withdrawalTaxableIncome,
+            ss,
+            this,
+          );
           const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(
             withdrawalTaxableIncome + taxableSS,
             year,

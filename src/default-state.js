@@ -118,6 +118,7 @@ export function createDefaultAppState() {
         ss: { age: 62, perMonth: 3000 },
       },
       tax: {
+        filingStatus: "marriedFilingJointly",
         brackets: [],
         state: { beforeRetirement: 5, afterRetirement: 0 },
       },
@@ -173,7 +174,10 @@ export function serializeUserData(data) {
       roth: data.person.roth,
       ss: { age: data.person.ss.age, perMonth: data.person.ss.perMonth },
     },
-    tax: { state: { ...data.tax.state } },
+    tax: {
+      filingStatus: data.tax.filingStatus ?? "marriedFilingJointly",
+      state: { ...data.tax.state },
+    },
   };
 }
 
@@ -262,6 +266,7 @@ export function loadInitialAppState() {
   const savedData = JSON.parse(localStorage.getItem("data"));
   if (savedData) {
     savedData.tax.brackets = [];
+    savedData.tax.filingStatus ??= "marriedFilingJointly";
     savedData.medicare.premiums = [];
     savedData.yearlyData = [];
     savedData.investmentContributions ??= [];

@@ -4,6 +4,17 @@ export default defineComponent({
   name: "IncomeTab",
   props: ["state", "actions"],
   template: /* html */ `
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label for="filingStatus">Federal Filing Status:</label>
+        <select id="filingStatus" class="form-select" v-model="state.data.tax.filingStatus" @change="actions.recalculate">
+          <option value="marriedFilingJointly">Married filing jointly</option>
+          <option value="single">Single</option>
+          <option value="headOfHousehold">Head of household</option>
+        </select>
+        <small class="form-text">Head of household generally requires a qualifying person and paying more than half the cost of keeping up a home.</small>
+      </div>
+    </div>
     <div class="row income-person-row">
       <h6>Self</h6>
       <div class="col-md-2">
@@ -49,7 +60,7 @@ export default defineComponent({
       </div>
     </div>
     <hr />
-    <div class="row income-person-row">
+    <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" class="row income-person-row">
       <h6>Spouse</h6>
       <div class="col-md-2">
         <label for="spouseSalary">Annual Salary:</label>
@@ -141,19 +152,18 @@ export default defineComponent({
     <hr />
     <div>
       <h5>Summary</h5>
-      Your current household earned income is <b>{{actions.toDollar(state.data.person.salary + state.data.person.spouse.salary)}}</b>, you
-      expect annual merit increases of <b>{{actions.toPercent(state.data.person.meritIncrease)}}</b> for you and
-      <b>{{actions.toPercent(state.data.person.spouse.meritIncrease)}}</b> for your spouse.
+      Your current earned income is <b>{{actions.toDollar(state.data.person.salary + (state.data.tax.filingStatus === 'marriedFilingJointly' ? state.data.person.spouse.salary : 0))}}</b>, you
+      expect annual merit increases of <b>{{actions.toPercent(state.data.person.meritIncrease)}}</b> for you<span v-if="state.data.tax.filingStatus === 'marriedFilingJointly'"> and <b>{{actions.toPercent(state.data.person.spouse.meritIncrease)}}</b> for your spouse</span>.
       <div v-if="state.data.contrib.totalPercent > 0">
         Your estimated annual 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.totalPercent / 100)}}</b> for you.
       </div>
       <div v-if="state.data.contrib.rothTotalPercent > 0">
         Your estimated annual Roth 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.rothTotalPercent / 100)}}</b> for you.
       </div>
-      <div v-if="state.data.person.spouse.salary > 0 && state.data.contrib.spouse.totalPercent > 0">
+      <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly' && state.data.person.spouse.salary > 0 && state.data.contrib.spouse.totalPercent > 0">
         Your spouse's estimated annual 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.totalPercent / 100)}}</b>.
       </div>
-      <div v-if="state.data.person.spouse.salary > 0 && state.data.contrib.spouse.rothTotalPercent > 0">
+      <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly' && state.data.person.spouse.salary > 0 && state.data.contrib.spouse.rothTotalPercent > 0">
         Your spouse's estimated annual Roth 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.rothTotalPercent / 100)}}</b>.
       </div>
     </div>

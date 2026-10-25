@@ -1,4 +1,4 @@
-import { TAX, CONFIG } from "./constants.js";
+import { TAX, CONFIG, getFilingStatus } from "./constants.js";
 import { toDollar, toPercent } from "./formatters.js";
 
 export function calculateTotal401kWithMatch(
@@ -44,10 +44,12 @@ export function calculateSSBenefits(person, inflation, age) {
   return yearlySs;
 }
 
-export function calculateSSToTax(otherIncome, ss) {
+export function calculateSSToTax(otherIncome, ss, state) {
   const provisionalIncome = otherIncome + ss / 2;
-  if (provisionalIncome < TAX.SS_LOWER) return 0;
-  if (provisionalIncome < TAX.SS_UPPER) return ss * TAX.SS_RATE_LOWER;
+  const [lowerThreshold, upperThreshold] =
+    getFilingStatus(state).socialSecurityThresholds;
+  if (provisionalIncome < lowerThreshold) return 0;
+  if (provisionalIncome < upperThreshold) return ss * TAX.SS_RATE_LOWER;
   return ss * TAX.SS_RATE_UPPER;
 }
 
@@ -88,15 +90,21 @@ export function calculateCapitalGainTax({
   if (investmentWithdrawal <= 0) return 0;
 
   const taxableGain = investmentWithdrawal / 2;
-  const taxable = taxableIncome + taxableGain;
-  const noTaxCeiling = getCapitalGain0TaxCeiling(year, state.data.inflation);
+  const adjustedGrossIncome = taxableIncome + taxableGain;
+  const standardDeduction =
+    getTaxBracketsForYear(state, year).standardDeduction;
+  const taxable = Math.max(taxableIncome - standardDeduction, 0) + taxableGain;
+  const noTaxCeiling = getCapitalGain0TaxCeiling(year, state);
   const gainsAboveNoTaxCeiling = Math.min(
     taxableGain,
     Math.max(taxable - noTaxCeiling, 0),
   );
   const gainsSubjectToMedicareSurtax = Math.min(
     taxableGain,
-    Math.max(taxable - TAX.MEDICARE_SURTAX_THRESHOLD, 0),
+    Math.max(
+      adjustedGrossIncome - getFilingStatus(state).medicareSurtaxThreshold,
+      0,
+    ),
   );
 
   return (
@@ -106,9 +114,9 @@ export function calculateCapitalGainTax({
   );
 }
 
-export function getCapitalGain0TaxCeiling(year, inflation) {
-  const ceilingIncreaseRate = inflation / 100;
-  let newCeiling = CONFIG.CAPITAL_GAIN_CEILING_2026;
+export function getCapitalGain0TaxCeiling(year, state) {
+  const ceilingIncreaseRate = state.data.inflation / 100;
+  let newCeiling = getFilingStatus(state).capitalGain0TaxCeiling2026;
   for (let i = 0; i < year - 2026; i++) {
     newCeiling = newCeiling * (1 + ceilingIncreaseRate);
   }
@@ -126,10 +134,10 @@ export function getFicaSSTaxCeiling(year) {
   return sum;
 }
 
-export function calculateFica(salary, year, spouseSalary = 0) {
+export function calculateFica(salary, year, state, spouseSalary = 0) {
   const ssRate = TAX.FICA_SS_RATE;
   const medicareRate = TAX.FICA_MEDICARE_RATE;
-  const medicareCeiling = TAX.FICA_MEDICARE_CEILING;
+  const medicareCeiling = getFilingStatus(state).additionalMedicareTaxThreshold;
   const medicareRateOverCeiling = TAX.FICA_MEDICARE_RATE_OVER;
   const ssTaxCeiling = getFicaSSTaxCeiling(year);
 
@@ -151,9 +159,10 @@ export function calculateFica(salary, year, spouseSalary = 0) {
 export function getMedicarePremiumsByMagi(magi, year, state) {
   const premiums = getMedicarePremiumsForYear(year, state);
   let premium = premiums.data[0].monthly;
-  for (let p of premiums.data) {
+  for (const p of premiums.data.slice(1)) {
     if (magi >= p.ceiling) {
       premium = p.monthly;
+    } else {
       break;
     }
   }
@@ -174,13 +183,15 @@ export function estimateMedicarePremiumsForAllYears(state) {
   state.data.medicare.premiums = [];
   const premiumIncreaseRate = CONFIG.MEDICARE_PREMIUM_INCREASE;
   const ceilingIncreaseRate = CONFIG.MEDICARE_CEILING_INCREASE;
+  const irmaaThresholds =
+    getFilingStatus(state).medicarePremiumThresholds2026;
   const premium2026 = [
-    { ceiling: 218000, monthly: 202.9 },
-    { ceiling: 274000, monthly: 284.1 },
-    { ceiling: 342000, monthly: 405.8 },
-    { ceiling: 410000, monthly: 527.5 },
-    { ceiling: 749000, monthly: 649.2 },
-    { ceiling: 1000000, monthly: 689.9 },
+    { ceiling: 0, monthly: 202.9 },
+    { ceiling: irmaaThresholds[0], monthly: 284.1 },
+    { ceiling: irmaaThresholds[1], monthly: 405.8 },
+    { ceiling: irmaaThresholds[2], monthly: 527.5 },
+    { ceiling: irmaaThresholds[3], monthly: 649.2 },
+    { ceiling: irmaaThresholds[4], monthly: 689.9 },
   ];
   state.data.medicare.premiums.push({ year: 2026, data: premium2026 });
 
@@ -200,52 +211,63 @@ export function estimateMedicarePremiumsForAllYears(state) {
 }
 
 export function calculateTaxBracketsForAllYear(state, year) {
-  if (state.data.tax.brackets && state.data.tax.brackets.length !== 0) return;
+  const filingStatus = state.data.tax.filingStatus ?? "marriedFilingJointly";
+  const cacheKey = [
+    filingStatus,
+    state.data.person.age,
+    state.data.person.deceased.age,
+  ].join(":");
+  if (
+    state.data.tax.brackets?.length &&
+    state.data.tax.bracketsCacheKey === cacheKey
+  ) {
+    return;
+  }
 
   const r = CONFIG.TAX_BRACKET_INCREASE;
-  const b2026Data = [
-    { percent: 12, income: 100800 },
-    { percent: 22, income: 211400 },
-    { percent: 24, income: 403550 },
-    { percent: 32, income: 512450 },
-    { percent: 35, income: 768700 },
-    { percent: 37, income: 1000000 },
-  ];
+  const status = getFilingStatus(state);
+  const b2026Data = status.taxBrackets2026;
 
   const b2026 = {
     year: 2026,
-    standardDeduction: 32200,
+    standardDeduction:
+      status.standardDeduction2026 +
+      (state.data.person.age + (2026 - new Date().getFullYear()) >= 65
+        ? status.additionalStandardDeduction2026
+        : 0),
     data: b2026Data,
   };
 
   state.data.tax.brackets = [b2026];
-  let extra65standardDeduction = 3300;
-  for (let i = 2026; i < 2026 + state.data.person.deceased.age; i++) {
-    const newdata = state.data.tax.brackets[
-      state.data.tax.brackets.length - 1
-    ].data.map((x) => ({
+  const currentYear = new Date().getFullYear();
+  const lastYear = Math.max(2026 + state.data.person.deceased.age, year);
+  for (let i = 2027; i <= lastYear; i++) {
+    const previous = state.data.tax.brackets.at(-1);
+    const newdata = previous.data.map((x) => ({
       percent: x.percent,
-      income: Math.round(x.income * (1 + r)),
+      income: Number.isFinite(x.income)
+        ? Math.round(x.income * (1 + r))
+        : x.income,
     }));
-    let standardDeduction =
-      state.data.tax.brackets[state.data.tax.brackets.length - 1]
-        .standardDeduction *
-      (1 + r);
-
-    const age = state.data.person.age + (year - new Date().getFullYear());
-    if ((i > 2026) & (age <= 65)) {
-      extra65standardDeduction *= 1 + r;
-      if (age === 65) {
-        standardDeduction += extra65standardDeduction;
-      }
-    }
+    const yearsSince2026 = i - 2026;
+    const ageInYear = state.data.person.age + (i - currentYear);
+    const ageDeduction =
+      ageInYear >= 65
+        ? status.additionalStandardDeduction2026 * (1 + r) ** yearsSince2026
+        : 0;
 
     state.data.tax.brackets.push({
       year: i,
-      standardDeduction,
+      standardDeduction:
+        (status.standardDeduction2026 +
+          (ageInYear >= 65
+            ? status.additionalStandardDeduction2026
+            : 0)) *
+        (1 + r) ** yearsSince2026,
       data: newdata,
     });
   }
+  state.data.tax.bracketsCacheKey = cacheKey;
 }
 
 export function getTaxBracketsForYear(state, year) {
@@ -261,37 +283,28 @@ export function getIncomeForBracketAndYear(state, year, bracketRate) {
   bracketRate = Number(bracketRate);
   if (bracketRate === 0) return 0;
 
-  const brackets = getTaxBracketsForYear(state, year).data;
-  let bracket = brackets.find((x) => x.percent === bracketRate);
-  if (bracket == null) {
-    let i = 0;
-    for (i = 0; i < brackets.length; i++) {
-      if (brackets[i].percent > bracketRate) break;
-    }
-    bracket = brackets[i + 1];
-  }
-  return bracket.income;
+  const taxData = getTaxBracketsForYear(state, year);
+  const brackets = taxData.data;
+  const bracket = brackets.find((x) => x.percent === bracketRate);
+  if (bracket == null) return brackets[brackets.length - 1].income;
+  return bracket.income + taxData.standardDeduction;
 }
 
 export function calculateOrdinaryIncomeTaxForYear(state, income, year) {
   const taxData = getTaxBracketsForYear(state, year);
   const brackets = taxData.data;
-  const standardDeduction =
-    taxData.standardDeduction > income ? income : taxData.standardDeduction;
-
-  income = income - standardDeduction;
+  income = Math.max(income - taxData.standardDeduction, 0);
   let sum = 0;
+  let previousThreshold = 0;
   for (let i = 0; i < brackets.length; i++) {
     const bracket = brackets[i];
-    if (income > bracket.income) {
-      let tax = (bracket.percent / 100) * bracket.income;
-      sum += tax;
-      income = income - bracket.income;
-    } else {
-      let tax = (bracket.percent / 100) * income;
-      sum += tax;
-      return sum;
-    }
+    const incomeInBracket = Math.max(
+      Math.min(income, bracket.income) - previousThreshold,
+      0,
+    );
+    sum += (bracket.percent / 100) * incomeInBracket;
+    if (income <= bracket.income) return sum;
+    previousThreshold = bracket.income;
   }
   return sum;
 }
