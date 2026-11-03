@@ -17,13 +17,19 @@ export default defineComponent({
       return this.actions.toDollar(adjustedAmount, fractionDigits);
     },
     getTaxTooltip(yearly) {
-      return [
+      const lines = [
         `Federal income tax: ${this.toDisplayDollar(yearly.ordinaryIncomeTax, yearly)}`,
         `FICA: ${this.toDisplayDollar(yearly.fica, yearly)}`,
         `Capital gains tax: ${this.toDisplayDollar(yearly.capitalGainTax, yearly)}`,
         `State tax: ${this.toDisplayDollar(yearly.stateTax, yearly)}`,
-        `Total: ${this.toDisplayDollar(yearly.tax, yearly)}`,
-      ].join("\n");
+      ];
+      if (yearly.earlyWithdrawalPenalty) {
+        lines.push(
+          `Early withdrawal penalty: ${this.toDisplayDollar(yearly.earlyWithdrawalPenalty, yearly)}`,
+        );
+      }
+      lines.push(`Total: ${this.toDisplayDollar(yearly.tax, yearly)}`);
+      return lines.join("\n");
     },
     getInvestmentTooltip(yearly) {
       const enteringBalance =
@@ -35,15 +41,23 @@ export default defineComponent({
               `Previous row balance: ${this.toDisplayDollar(yearly.investmentPriorYearBalance, yearly)}`,
               `Previous cash savings: ${this.toDisplayDollar(yearly.investmentPriorYearCashFlow, yearly)}`,
               `Previous investment withdrawal: -${this.toDisplayDollar(yearly.investmentPriorYearWithdrawal, yearly)}`,
+              `RMD reinvested: ${this.toDisplayDollar(yearly.investmentPriorYearRmdReinvested, yearly)}`,
+              `Surplus cash saved: ${this.toDisplayDollar(yearly.investmentPriorYearSurplusCash, yearly)}`,
               `Balance entering year: ${this.toDisplayDollar(yearly.investmentStartingBalance, yearly)}`,
             ];
-      return [
+      const lines = [
         ...enteringBalance,
         `Annual return: ${this.toDisplayDollar(yearly.investmentReturn, yearly)}`,
         `One-time incomes: ${this.toDisplayDollar(yearly.investmentContribution, yearly)}`,
         `One-time expenses: -${this.toDisplayDollar(yearly.additionalExpenseFromInvestment, yearly)}`,
         `Balance shown: ${this.toDisplayDollar(yearly.investment, yearly)}`,
-      ].join("\n");
+      ];
+      if (yearly.shortfall > 0.01) {
+        lines.push(
+          `Unfunded shortfall: ${this.toDisplayDollar(yearly.shortfall, yearly)}`,
+        );
+      }
+      return lines.join("\n");
     },
     getPretaxTooltip(yearly) {
       const enteringBalance =

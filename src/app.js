@@ -5,7 +5,7 @@ import {
   serializeUserData,
 } from "./default-state.js";
 import {
-  calculateTotal401kWithMatch,
+  calculateContributionRates,
   calculatePercentOfMonthsLeftInYear,
   calculateGain,
   calculateInsuranceSpendingForYear,
@@ -13,6 +13,7 @@ import {
   calculateSSToTax,
   getRowTitle,
   calculateCapitalGainTax,
+  calculateEarlyWithdrawalPenalty,
   calculateFica,
   getMedicarePremiumsByMagi,
   estimateMedicarePremiumsForAllYears,
@@ -20,6 +21,7 @@ import {
   getIncomeForBracketAndYear,
   calculateOrdinaryIncomeTaxForYear as calculateOrdinaryIncomeTaxForYearHelper,
 } from "./calculator.js";
+import { CONFIG } from "./constants.js";
 import { toDollar, toPercent } from "./formatters.js";
 
 function updateChart() {
@@ -29,8 +31,14 @@ function updateChart() {
   chartParent.style.display = "none";
   chartParent.innerHTML = '<canvas id="chart1"></canvas>';
   chartParent.style.display = "block";
-  const savedData = JSON.parse(localStorage.getItem("data"));
-  if (!savedData || !savedData.yearlyData) return;
+  const savedData = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("data"));
+    } catch {
+      return null;
+    }
+  })();
+  if (!savedData || !Array.isArray(savedData.yearlyData)) return;
   const yearlyData = savedData.yearlyData;
   const labels = yearlyData.map((x) => x.age);
   const data = {
@@ -250,7 +258,7 @@ IRA/401k:               <b>{{ toDollar(data.person.retirement.pretaxBalance) }}<
               <div v-if="data.person.retirement.investment < 0" class="alert alert-danger mt-3">
                 Your current retirement plan cannot get you to <b>{{ data.person.retirement.age }}</b>, your post-tax balance will be <b>{{ toDollar(data.person.retirement.investment) }}</b>, try adjusting your retirement plan.
               </div>
-              <p>After retirement, your spending and taxes are funded from your post-tax investment account until you reach <b>{{ data.noPenaltyWithdraw.age }}</b>.</p>
+              <p>After retirement, your spending and taxes are funded from your post-tax investment account first. Once that is exhausted, Roth accounts are used, then pre-tax accounts; pre-tax withdrawals before age <b>{{ data.noPenaltyWithdraw.age }}</b> include a 10% early-withdrawal penalty.</p>
             </div>
             <div v-show="activeSummaryTab === 'withdraw'" class="tab-pane fade show active" role="tabpanel">
               <h6>Penalty free withdraw year <b>{{ data.noPenaltyWithdraw.year }}</b> (age <b>{{ data.noPenaltyWithdraw.age }}</b>)</h6>
@@ -337,26 +345,23 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       }
     },
     calculate() {
-      this.data.contrib.totalPercent = calculateTotal401kWithMatch(
+      const selfRates = calculateContributionRates(
         this.data.contrib.employeePercent,
-        this.data.contrib.employerPercent,
-        this.data.contrib.employerMatchUpTo,
-      );
-      this.data.contrib.rothTotalPercent = calculateTotal401kWithMatch(
         this.data.contrib.roth401kPercent,
         this.data.contrib.employerPercent,
         this.data.contrib.employerMatchUpTo,
       );
-      this.data.contrib.spouse.totalPercent = calculateTotal401kWithMatch(
+      this.data.contrib.totalPercent = selfRates.totalPercent;
+      this.data.contrib.rothTotalPercent = selfRates.rothTotalPercent;
+
+      const spouseRates = calculateContributionRates(
         this.data.contrib.spouse.employeePercent,
-        this.data.contrib.spouse.employerPercent,
-        this.data.contrib.spouse.employerMatchUpTo,
-      );
-      this.data.contrib.spouse.rothTotalPercent = calculateTotal401kWithMatch(
         this.data.contrib.spouse.roth401kPercent,
         this.data.contrib.spouse.employerPercent,
         this.data.contrib.spouse.employerMatchUpTo,
       );
+      this.data.contrib.spouse.totalPercent = spouseRates.totalPercent;
+      this.data.contrib.spouse.rothTotalPercent = spouseRates.rothTotalPercent;
 
       this.calculateYearly();
       this.saveState();
@@ -386,7 +391,11 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       this.calculate();
     },
     saveState() {
-      localStorage.setItem("data", JSON.stringify(this.data));
+      try {
+        localStorage.setItem("data", JSON.stringify(this.data));
+      } catch (error) {
+        console.warn("Unable to save retirement data in this browser.", error);
+      }
     },
     mergeYearlyDataByAge(originalData) {
       const oneYearData = this.data.yearlyData.find(
@@ -397,20 +406,31 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
     },
     calculateYearly() {
       this.data.yearlyData = [];
-      const yearsToCalc = this.data.person.deceased.age - this.data.person.age;
-      let age = this.data.person.age;
+      const startAge = Number(this.data.person.age);
+      const deceasedAge = Number(this.data.person.deceased.age);
+      const yearsToCalc =
+        Number.isFinite(startAge) &&
+        Number.isFinite(deceasedAge) &&
+        deceasedAge > startAge
+          ? Math.min(deceasedAge - startAge, CONFIG.MAX_AGE)
+          : 0;
+      let age = Number.isFinite(startAge) ? startAge : 0;
       let year = new Date().getFullYear();
-      let pretaxBalance = Math.max(this.data.person.pretaxBalance, 0);
-      let selfSalary = this.data.person.salary;
+      let pretaxBalance = Math.max(Number(this.data.person.pretaxBalance) || 0, 0);
+      let selfSalary = Number(this.data.person.salary) || 0;
       const isJointFiler =
         this.data.tax.filingStatus === "marriedFilingJointly";
-      let spouseSalary = isJointFiler ? this.data.person.spouse.salary : 0;
+      let spouseSalary = isJointFiler
+        ? Number(this.data.person.spouse.salary) || 0
+        : 0;
       let salary = selfSalary + spouseSalary;
-      let investment = this.data.person.investment;
-      let roth = this.data.person.roth;
+      let investment = Number(this.data.person.investment) || 0;
+      let roth = Number(this.data.person.roth) || 0;
       let investmentPriorYearBalance = null;
       let investmentPriorYearCashFlow = 0;
       let investmentPriorYearWithdrawal = 0;
+      let investmentPriorYearRmdReinvested = 0;
+      let investmentPriorYearSurplusCash = 0;
       let pretaxPriorYearBalance = null;
       let pretaxPriorYearContribution = 0;
       let pretaxPriorYearDistribution = 0;
@@ -502,6 +522,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         let additionalExpense = 0;
         let additionalExpenseFromInvestment = 0;
         for (const contribution of this.data.investmentContributions ?? []) {
+          if (!contribution || typeof contribution !== "object") continue;
           if (Number(contribution.age) === age) {
             const amount = Number(contribution.amount);
             if (Number.isFinite(amount) && amount > 0) {
@@ -528,54 +549,81 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
 
         const monthsLeft = calculatePercentOfMonthsLeftInYear(year);
         const k401 =
-          (selfSalary * (this.data.contrib.totalPercent / 100) +
-            spouseSalary * (this.data.contrib.spouse.totalPercent / 100)) *
+          (selfSalary * (Number(this.data.contrib.totalPercent) / 100) +
+            spouseSalary *
+              (Number(this.data.contrib.spouse.totalPercent) / 100)) *
           monthsLeft;
         const k401Employee =
-          (selfSalary * (this.data.contrib.employeePercent / 100) +
-            spouseSalary * (this.data.contrib.spouse.employeePercent / 100)) *
+          (selfSalary * (Number(this.data.contrib.employeePercent) / 100) +
+            spouseSalary *
+              (Number(this.data.contrib.spouse.employeePercent) / 100)) *
+          monthsLeft;
+        // Employer match is part of roth401k but it is not deducted from the
+        // employee's take-home pay; only the employee deferral is.
+        const roth401kEmployee =
+          (selfSalary * (Number(this.data.contrib.roth401kPercent) / 100) +
+            spouseSalary *
+              (Number(this.data.contrib.spouse.roth401kPercent) / 100)) *
           monthsLeft;
         const roth401k =
-          (selfSalary * (this.data.contrib.rothTotalPercent / 100) +
-            spouseSalary * (this.data.contrib.spouse.rothTotalPercent / 100)) *
+          (selfSalary * (Number(this.data.contrib.rothTotalPercent) / 100) +
+            spouseSalary *
+              (Number(this.data.contrib.spouse.rothTotalPercent) / 100)) *
           monthsLeft;
 
-        let taxableEarnedIncome = salary - k401Employee;
-        let taxableOrdinaryIncome = taxableEarnedIncome;
+        const taxableEarnedIncome = salary - k401Employee;
 
+        // Required Minimum Distribution. The RMD is always taxable ordinary
+        // income and, by law, must be distributed before (and cannot be part
+        // of) any Roth conversion. The old code only applied the RMD when a
+        // Roth conversion was enabled and, worse, moved it into the Roth
+        // account as if it had been converted.
         let rmd = 0;
         if (age >= this.data.rmd.age) {
           const divisor = this.data.rmd.lifetimeTable.find(
             (x) => x[0] === age,
           )?.[1];
-          rmd = divisor ? pretaxBalance / divisor : 0;
+          // RMDs use the prior year-end balance, which is this row's starting
+          // balance (before this year's growth and contributions).
+          rmd = divisor
+            ? Math.min(
+                Math.max(pretaxStartingBalance, 0) / divisor,
+                Math.max(pretaxBalance, 0),
+              )
+            : 0;
         }
+        const taxableOrdinaryIncomeBeforeConversion = taxableEarnedIncome + rmd;
 
-        let dist = 0;
-        let conversionAmount = 0;
-        let shouldConvert =
-          pretaxBalance > 0 &&
-          this.data.rothConversion.bracket > 0 &&
-          age >= this.data.rothConversion.age;
-        if (shouldConvert) {
-          let conversionConfig = this.data.rothConversion;
-          if (age >= this.data.rothConversion2.age)
-            conversionConfig = this.data.rothConversion2;
-          const bracket = Number(conversionConfig.bracket);
-          if (bracket > 0) {
-            const totalDistAllowed =
-              getIncomeForBracketAndYear(this, year, bracket) -
-              taxableOrdinaryIncome +
-              conversionConfig.offset;
-            dist =
-              pretaxBalance < totalDistAllowed
-                ? pretaxBalance
-                : totalDistAllowed;
-            conversionAmount = dist;
-          }
-          dist = Math.max(rmd, dist);
-          taxableOrdinaryIncome += dist;
-        }
+        // Choose the active Roth-conversion stage. The conversion is sized
+        // against the bracket room left after RMDs and the pre-tax withdrawals
+        // used to fund spending. That room is recomputed inside the loop below
+        // once those withdrawals are known, so the conversion does not push
+        // income past the selected bracket.
+        const conversionConfig =
+          age >= this.data.rothConversion2.age
+            ? this.data.rothConversion2
+            : this.data.rothConversion;
+        const conversionBracket = Number(conversionConfig.bracket) || 0;
+        const canConvert =
+          age >= this.data.rothConversion.age &&
+          conversionBracket > 0 &&
+          pretaxBalance > rmd;
+        const getConversionRoom = (otherOrdinaryIncome) =>
+          getIncomeForBracketAndYear(this, year, conversionBracket) -
+          otherOrdinaryIncome +
+          (Number(conversionConfig.offset) || 0);
+        const calculateConversionAmount = (
+          otherOrdinaryIncome,
+          pretaxWithdrawal = 0,
+        ) => {
+          if (!canConvert) return 0;
+          const room = getConversionRoom(otherOrdinaryIncome);
+          const available = pretaxBalance - rmd - pretaxWithdrawal;
+          return Math.max(0, Math.min(available, room));
+        };
+        let conversionAmount = calculateConversionAmount(
+          taxableOrdinaryIncomeBeforeConversion,
+        );
 
         const ss = calculateSSBenefits(
           this.data.person,
@@ -585,13 +633,25 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         let spendingAfterSS = spendingAmount - ss;
 
         const fica = calculateFica(selfSalary, year, this, spouseSalary);
+        const medicarePeople =
+          this.data.tax.filingStatus === "marriedFilingJointly" ? 2 : 1;
         const allocateWithdrawals = (cashNeeded) => {
           let remaining = Math.max(cashNeeded, 0);
           let pretaxWithdrawal = 0;
           let investmentWithdrawal = 0;
           let rothWithdrawal = 0;
+          // The RMD is distributed whether or not cash is needed. While still
+          // working, salary funds spending, so the whole RMD is reinvested.
+          const rmdUsed =
+            age >= this.data.person.retirement.age
+              ? Math.min(rmd, remaining)
+              : 0;
+          remaining -= rmdUsed;
           const takePretax = () => {
-            const pretaxAvailable = Math.max(pretaxBalance + k401 - dist, 0);
+            const pretaxAvailable = Math.max(
+              pretaxBalance + k401 - rmd - conversionAmount,
+              0,
+            );
             pretaxWithdrawal = Math.min(pretaxAvailable, remaining);
             remaining -= pretaxWithdrawal;
           };
@@ -608,19 +668,31 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
             if (age >= this.data.noPenaltyWithdraw.age) {
               takePretax();
               takeInvestment();
+              takeRoth();
             } else {
+              // Before the penalty-free age, use the taxable account, then
+              // Roth (assumed to be qualified/contribution basis), and only
+              // then take a penalized pre-tax withdrawal.
               takeInvestment();
+              takeRoth();
               takePretax();
             }
-            takeRoth();
           }
 
-          return { pretaxWithdrawal, investmentWithdrawal, rothWithdrawal };
+          return {
+            pretaxWithdrawal,
+            investmentWithdrawal,
+            rothWithdrawal,
+            rmdUsed,
+            shortfall: remaining,
+          };
         };
         const calculateTaxesForWithdrawals = ({
           pretaxWithdrawal,
           investmentWithdrawal,
         }) => {
+          const taxableOrdinaryIncome =
+            taxableOrdinaryIncomeBeforeConversion + conversionAmount;
           const withdrawalTaxableIncome =
             taxableOrdinaryIncome + pretaxWithdrawal;
           const taxableSS = calculateSSToTax(
@@ -650,8 +722,15 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
                   withdrawalTaxableIncome + taxableSS,
                   year - 2,
                   this,
-                ) * 24
+                ) *
+                12 *
+                medicarePeople
               : 0;
+          const earlyWithdrawalPenalty = calculateEarlyWithdrawalPenalty(
+            pretaxWithdrawal,
+            age,
+            this.data.noPenaltyWithdraw.age,
+          );
 
           return {
             taxableSS,
@@ -659,48 +738,90 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
             capitalGainTax,
             stateTax,
             medicareBPremium,
-            tax: ordinaryIncomeTax + fica + capitalGainTax + stateTax,
+            earlyWithdrawalPenalty,
+            tax:
+              ordinaryIncomeTax +
+              fica +
+              capitalGainTax +
+              stateTax +
+              earlyWithdrawalPenalty,
           };
         };
 
+        // Converge the withdrawal/tax feedback loop. An outer loop then
+        // resizes the Roth conversion so it fills only the bracket room left
+        // after the RMD and the pre-tax withdrawals needed for spending.
         let withdrawals = allocateWithdrawals(0);
-        for (let i = 0; i < 50; i++) {
-          const taxes = calculateTaxesForWithdrawals(withdrawals);
-          const nextWithdrawals = allocateWithdrawals(
-            taxes.tax +
-              spendingAfterSS +
-              taxes.medicareBPremium -
-              additionalExpenseFromInvestment,
-          );
-          if (
-            Math.abs(
-              nextWithdrawals.pretaxWithdrawal - withdrawals.pretaxWithdrawal,
-            ) < 0.01 &&
-            Math.abs(
-              nextWithdrawals.investmentWithdrawal -
-                withdrawals.investmentWithdrawal,
-            ) < 0.01 &&
-            Math.abs(
-              nextWithdrawals.rothWithdrawal - withdrawals.rothWithdrawal,
-            ) < 0.01
-          ) {
+        let taxes = calculateTaxesForWithdrawals(withdrawals);
+        const sameWithdrawals = (a, b) =>
+          Math.abs(a.pretaxWithdrawal - b.pretaxWithdrawal) < 0.01 &&
+          Math.abs(a.investmentWithdrawal - b.investmentWithdrawal) < 0.01 &&
+          Math.abs(a.rothWithdrawal - b.rothWithdrawal) < 0.01 &&
+          Math.abs(a.rmdUsed - b.rmdUsed) < 0.01;
+        const convergeWithdrawals = () => {
+          for (let i = 0; i < 50; i++) {
+            taxes = calculateTaxesForWithdrawals(withdrawals);
+            const nextWithdrawals = allocateWithdrawals(
+              taxes.tax +
+                spendingAfterSS +
+                taxes.medicareBPremium -
+                additionalExpenseFromInvestment,
+            );
+            const converged = sameWithdrawals(nextWithdrawals, withdrawals);
             withdrawals = nextWithdrawals;
+            if (converged) break;
+          }
+        };
+
+        convergeWithdrawals();
+        for (let outer = 0; canConvert && outer < 25; outer++) {
+          const nextConversionAmount = calculateConversionAmount(
+            taxableOrdinaryIncomeBeforeConversion +
+              withdrawals.pretaxWithdrawal,
+            withdrawals.pretaxWithdrawal,
+          );
+          if (Math.abs(nextConversionAmount - conversionAmount) < 1) {
+            conversionAmount = nextConversionAmount;
             break;
           }
-          withdrawals = nextWithdrawals;
+          // Damp the update: conversion -> tax -> withdrawal -> bracket room
+          // is a negative feedback loop and a full step can oscillate.
+          conversionAmount =
+            conversionAmount + (nextConversionAmount - conversionAmount) * 0.5;
+          withdrawals = allocateWithdrawals(0);
+          convergeWithdrawals();
         }
+        // Make sure the recorded withdrawals match the final conversion amount
+        // (the last conversion update resets the loop above).
+        convergeWithdrawals();
+        taxes = calculateTaxesForWithdrawals(withdrawals);
 
-        const { pretaxWithdrawal, investmentWithdrawal, rothWithdrawal } =
-          withdrawals;
+        const {
+          pretaxWithdrawal,
+          investmentWithdrawal,
+          rothWithdrawal,
+          rmdUsed,
+        } = withdrawals;
         const {
           taxableSS,
           ordinaryIncomeTax,
           capitalGainTax,
           stateTax,
           medicareBPremium,
+          earlyWithdrawalPenalty,
           tax,
-        } = calculateTaxesForWithdrawals(withdrawals);
+        } = taxes;
         spendingAfterSS += medicareBPremium;
+
+        const rmdReinvested = Math.max(rmd - rmdUsed, 0);
+        // Surplus income (for example Social Security above spending) is
+        // saved in the taxable account instead of disappearing.
+        const cashNeeded =
+          tax + spendingAfterSS - additionalExpenseFromInvestment;
+        const surplusCash =
+          age >= this.data.person.retirement.age && cashNeeded < 0
+            ? -cashNeeded
+            : 0;
 
         const yearly = {
           age,
@@ -716,7 +837,9 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           k401,
           roth401k,
           rmd,
-          dist,
+          rmdUsed,
+          rmdReinvested,
+          dist: conversionAmount,
           conversionAmount,
           investment,
           investmentStartingBalance,
@@ -724,9 +847,16 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           investmentContribution,
           additionalExpense,
           additionalExpenseFromInvestment,
+          surplusCash,
+          shortfall:
+            age >= this.data.person.retirement.age
+              ? withdrawals.shortfall
+              : 0,
           investmentPriorYearBalance,
           investmentPriorYearCashFlow,
           investmentPriorYearWithdrawal,
+          investmentPriorYearRmdReinvested,
+          investmentPriorYearSurplusCash,
           roth,
           rothStartingBalance,
           rothReturn,
@@ -740,6 +870,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           ordinaryIncomeTax,
           capitalGainTax,
           stateTax,
+          earlyWithdrawalPenalty,
           title,
           ss,
           medicare: medicareBPremium,
@@ -749,18 +880,23 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
 
         age++;
         year++;
-        roth = roth + dist + roth401k - rothWithdrawal;
+        roth = roth + conversionAmount + roth401k - rothWithdrawal;
         pretaxBalance = Math.max(
-          pretaxBalance + k401 - dist - pretaxWithdrawal,
+          pretaxBalance +
+            k401 -
+            rmd -
+            conversionAmount -
+            pretaxWithdrawal,
           0,
         );
         investment -= investmentWithdrawal;
+        investment += rmdReinvested + surplusCash;
         let investmentCashFlow = 0;
 
         if (age <= this.data.person.retirement.age) {
           investmentCashFlow =
             (taxableEarnedIncome -
-              roth401k -
+              roth401kEmployee -
               (spendingAfterSS - additionalExpense) -
               tax) *
             calculatePercentOfMonthsLeftInYear(year - 1);
@@ -768,15 +904,17 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         }
 
         rothPriorYearBalance = yearly.roth;
-        rothPriorYearDistribution = dist;
+        rothPriorYearDistribution = conversionAmount;
         rothPriorYearContribution = roth401k;
         rothPriorYearWithdrawal = rothWithdrawal;
         investmentPriorYearBalance = yearly.investment;
         investmentPriorYearCashFlow = investmentCashFlow;
         investmentPriorYearWithdrawal = investmentWithdrawal;
+        investmentPriorYearRmdReinvested = rmdReinvested;
+        investmentPriorYearSurplusCash = surplusCash;
         pretaxPriorYearBalance = yearly.pretaxBalance;
         pretaxPriorYearContribution = k401;
-        pretaxPriorYearDistribution = dist;
+        pretaxPriorYearDistribution = conversionAmount + rmd;
         pretaxPriorYearWithdrawal = pretaxWithdrawal;
 
         spending.beforeRetirement =

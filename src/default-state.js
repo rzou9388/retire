@@ -233,6 +233,15 @@ function loadQueryData() {
     }
     const appState = createDefaultAppState();
     appState.data = mergeWithDefaults(appState.data, inputData);
+    // Never trust derived values from a shared URL; rebuild them.
+    appState.data.tax.brackets = [];
+    appState.data.medicare.premiums = [];
+    appState.data.yearlyData = [];
+    appState.data.investmentContributions = Array.isArray(
+      appState.data.investmentContributions,
+    )
+      ? appState.data.investmentContributions
+      : [];
     const url = new URL(window.location.href);
     url.searchParams.delete("data");
     window.history.replaceState(
@@ -263,33 +272,32 @@ export function loadInitialAppState() {
   const queryState = loadQueryData();
   if (queryState) return queryState;
 
-  const savedData = JSON.parse(localStorage.getItem("data"));
-  if (savedData) {
-    savedData.tax.brackets = [];
-    savedData.tax.filingStatus ??= "marriedFilingJointly";
-    savedData.medicare.premiums = [];
-    savedData.yearlyData = [];
-    savedData.investmentContributions ??= [];
-    const legacyMeritIncrease = savedData.meritIncrease ?? 2;
-    savedData.person.meritIncrease ??= legacyMeritIncrease;
-    savedData.person.spouse ??= { salary: 0 };
-    savedData.person.spouse.salary ??= 0;
-    savedData.person.spouse.meritIncrease ??= legacyMeritIncrease;
-    savedData.contrib.spouse ??= {
-      employeePercent: 6,
-      employerPercent: 50,
-      totalPercent: 0,
-      roth401kPercent: 0,
-      rothTotalPercent: 0,
-      employerMatchUpTo: 6,
-    };
-    savedData.contrib.spouse.employeePercent ??= 6;
-    savedData.contrib.spouse.employerPercent ??= 50;
-    savedData.contrib.spouse.totalPercent ??= 0;
-    savedData.contrib.spouse.roth401kPercent ??= 0;
-    savedData.contrib.spouse.rothTotalPercent ??= 0;
-    savedData.contrib.spouse.employerMatchUpTo ??= 6;
-    return { data: savedData };
+  let savedData = null;
+  try {
+    savedData = JSON.parse(localStorage.getItem("data"));
+  } catch (error) {
+    console.warn("Unable to read saved retirement data; using defaults.", error);
+    return createDefaultAppState();
   }
-  return createDefaultAppState();
+  if (!savedData || typeof savedData !== "object" || Array.isArray(savedData)) {
+    return createDefaultAppState();
+  }
+
+  // Fill in any keys added since the data was saved (and tolerate older or
+  // partially written payloads) instead of assuming a complete object.
+  const defaults = createDefaultAppState();
+  const legacyMeritIncrease = savedData.meritIncrease;
+  const hadPersonMeritIncrease = savedData.person?.meritIncrease != null;
+  const data = mergeWithDefaults(defaults.data, savedData.data ?? savedData);
+  if (!hadPersonMeritIncrease && legacyMeritIncrease != null) {
+    data.person.meritIncrease = legacyMeritIncrease;
+  }
+  // Derived/cached data is always rebuilt.
+  data.tax.brackets = [];
+  data.medicare.premiums = [];
+  data.yearlyData = [];
+  data.investmentContributions = Array.isArray(data.investmentContributions)
+    ? data.investmentContributions
+    : [];
+  return { data };
 }

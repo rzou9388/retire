@@ -6,9 +6,43 @@ export function calculateTotal401kWithMatch(
   employerPercent,
   matchUpToPercent,
 ) {
+  employeePercent = Number(employeePercent) || 0;
+  employerPercent = Number(employerPercent) || 0;
+  matchUpToPercent = Number(matchUpToPercent) || 0;
   const adjustedEmployeePercent =
     employeePercent > matchUpToPercent ? matchUpToPercent : employeePercent;
   return employeePercent + adjustedEmployeePercent * (employerPercent / 100);
+}
+
+/**
+ * Split an employer match across pre-tax and Roth contributions.
+ *
+ * The match is earned on the employee's *combined* contribution up to
+ * matchUpToPercent. Computing it separately for the pre-tax and Roth plans
+ * (the old behavior) double-counts the employer match whenever the employee
+ * contributes to both plans.
+ */
+export function calculateContributionRates(
+  pretaxPercent,
+  rothPercent,
+  employerPercent,
+  matchUpToPercent,
+) {
+  pretaxPercent = Number(pretaxPercent) || 0;
+  rothPercent = Number(rothPercent) || 0;
+  employerPercent = Number(employerPercent) || 0;
+  matchUpToPercent = Number(matchUpToPercent) || 0;
+
+  const employeeTotal = pretaxPercent + rothPercent;
+  const matchedPercent = Math.min(employeeTotal, matchUpToPercent);
+  const employerMatch = matchedPercent * (employerPercent / 100);
+  const pretaxShare =
+    employeeTotal > 0 ? pretaxPercent / employeeTotal : 0;
+
+  return {
+    totalPercent: pretaxPercent + employerMatch * pretaxShare,
+    rothTotalPercent: rothPercent + employerMatch * (1 - pretaxShare),
+  };
 }
 
 export function calculatePercentOfMonthsLeftInYear(year) {
@@ -48,35 +82,40 @@ export function calculateSSToTax(otherIncome, ss, state) {
   const provisionalIncome = otherIncome + ss / 2;
   const [lowerThreshold, upperThreshold] =
     getFilingStatus(state).socialSecurityThresholds;
-  if (provisionalIncome < lowerThreshold) return 0;
-  if (provisionalIncome < upperThreshold) return ss * TAX.SS_RATE_LOWER;
-  return ss * TAX.SS_RATE_UPPER;
+
+  // IRS Pub. 915 formula:
+  //   up to 50% of benefits are taxable in the lower band, plus 85% of the
+  //   excess provisional income above the upper threshold, capped at 85% of
+  //   total benefits. The old step function (0% / 50% / 85% of all benefits)
+  //   substantially overstated the tax just above each threshold.
+  const lowerBandIncome = Math.max(
+    Math.min(provisionalIncome, upperThreshold) - lowerThreshold,
+    0,
+  );
+  const taxableBenefits =
+    Math.min(lowerBandIncome * TAX.SS_RATE_LOWER, ss * TAX.SS_RATE_LOWER) +
+    Math.max(provisionalIncome - upperThreshold, 0) * TAX.SS_RATE_UPPER;
+
+  return Math.min(taxableBenefits, ss * TAX.SS_RATE_UPPER);
 }
 
 export function getRowTitle(age, state) {
-  let title = "";
-  switch (age) {
-    case state.data.person.retirement.age:
-      title = "Retirement starts";
-      break;
-    case state.data.rmd.age:
-      title = "Required Minimum Distribution starts";
-      break;
-    case state.data.medicare.age:
-      title = "Medicare starts";
-      break;
-    case state.data.person.ss.age:
-      title = "Social Security benefit starts";
-      break;
-    case state.data.rothConversion.age:
-      title = "Roth Conversion starts";
-      break;
-    case state.data.noPenaltyWithdraw.age:
-      title =
-        "Penalty free withdraw from pretax accounts starts, your spendings will be taken from pretax accounts first";
-      break;
-  }
-  return title;
+  const currentAge = Number(age);
+  const milestones = [
+    [state.data.person.retirement.age, "Retirement starts"],
+    [state.data.rmd.age, "Required Minimum Distribution starts"],
+    [state.data.medicare.age, "Medicare starts"],
+    [state.data.person.ss.age, "Social Security benefit starts"],
+    [state.data.rothConversion.age, "Roth Conversion starts"],
+    [
+      state.data.noPenaltyWithdraw.age,
+      "Penalty free withdraw from pretax accounts starts, your spendings will be taken from pretax accounts first",
+    ],
+  ];
+  return (
+    milestones.find(([milestoneAge]) => Number(milestoneAge) === currentAge)?.[1] ??
+    ""
+  );
 }
 
 export function calculateCapitalGainTax({
@@ -93,10 +132,21 @@ export function calculateCapitalGainTax({
   const adjustedGrossIncome = taxableIncome + taxableGain;
   const standardDeduction =
     getTaxBracketsForYear(state, year).standardDeduction;
-  const taxable = Math.max(taxableIncome - standardDeduction, 0) + taxableGain;
+  // A standard deduction that is not used up by ordinary income also shelters
+  // capital gains. The old code applied the full deduction to ordinary income
+  // but ignored any unused part, overtaxing gains in low-income years.
+  const unusedStandardDeduction = Math.max(
+    standardDeduction - taxableIncome,
+    0,
+  );
+  const taxableGainAfterDeduction = Math.max(
+    taxableGain - unusedStandardDeduction,
+    0,
+  );
+  const taxable = Math.max(taxableIncome - standardDeduction, 0) + taxableGainAfterDeduction;
   const noTaxCeiling = getCapitalGain0TaxCeiling(year, state);
   const gainsAboveNoTaxCeiling = Math.min(
-    taxableGain,
+    taxableGainAfterDeduction,
     Math.max(taxable - noTaxCeiling, 0),
   );
   const gainsSubjectToMedicareSurtax = Math.min(
@@ -134,7 +184,23 @@ export function getFicaSSTaxCeiling(year) {
   return sum;
 }
 
+/**
+ * Additional 10% tax on pre-tax withdrawals taken before the penalty-free
+ * age. Applied to the amount actually withdrawn for spending/taxes.
+ */
+export function calculateEarlyWithdrawalPenalty(
+  pretaxWithdrawal,
+  age,
+  penaltyFreeAge,
+) {
+  if (age >= penaltyFreeAge) return 0;
+  return Math.max(Number(pretaxWithdrawal) || 0, 0) *
+    TAX.EARLY_WITHDRAWAL_PENALTY_RATE;
+}
+
 export function calculateFica(salary, year, state, spouseSalary = 0) {
+  salary = Number(salary) || 0;
+  spouseSalary = Number(spouseSalary) || 0;
   const ssRate = TAX.FICA_SS_RATE;
   const medicareRate = TAX.FICA_MEDICARE_RATE;
   const medicareCeiling = getFilingStatus(state).additionalMedicareTaxThreshold;
@@ -176,7 +242,15 @@ export function getMedicarePremiumsForYear(year, state) {
   ) {
     estimateMedicarePremiumsForAllYears(state);
   }
-  return state.data.medicare.premiums.find((y) => y.year === year);
+  const premiums = state.data.medicare.premiums;
+  const match = premiums.find((y) => y.year === year);
+  if (match) return match;
+  // IRMAA looks up MAGI two years back. Early in the projection that year can
+  // predate 2026 (the first projected premium year), and a plan whose end is
+  // beyond the generated range can run past the last year. Fall back to the
+  // nearest available table instead of returning undefined (which used to
+  // throw and abort the whole calculation).
+  return Number(year) < premiums[0].year ? premiums[0] : premiums.at(-1);
 }
 
 export function estimateMedicarePremiumsForAllYears(state) {
@@ -195,9 +269,14 @@ export function estimateMedicarePremiumsForAllYears(state) {
   ];
   state.data.medicare.premiums.push({ year: 2026, data: premium2026 });
 
-  const deceaseYear =
-    new Date().getFullYear() +
-    (state.data.person.deceased.age - state.data.person.age);
+  const currentYear = new Date().getFullYear();
+  const personAge = Number(state.data.person.age);
+  const deceasedAge = Number(state.data.person.deceased.age);
+  const yearsToDeath =
+    Number.isFinite(personAge) && Number.isFinite(deceasedAge)
+      ? Math.max(Math.min(deceasedAge - personAge, CONFIG.MAX_AGE), 0)
+      : CONFIG.MAX_AGE;
+  const deceaseYear = currentYear + yearsToDeath;
   for (let i = state.data.medicare.premiums[0].year + 1; i < deceaseYear; i++) {
     const previousPremium = state.data.medicare.premiums.find(
       (x) => x.year === i - 1,
@@ -232,7 +311,7 @@ export function calculateTaxBracketsForAllYear(state, year) {
     year: 2026,
     standardDeduction:
       status.standardDeduction2026 +
-      (state.data.person.age + (2026 - new Date().getFullYear()) >= 65
+      (Number(state.data.person.age) + (2026 - new Date().getFullYear()) >= 65
         ? status.additionalStandardDeduction2026
         : 0),
     data: b2026Data,
@@ -240,7 +319,15 @@ export function calculateTaxBracketsForAllYear(state, year) {
 
   state.data.tax.brackets = [b2026];
   const currentYear = new Date().getFullYear();
-  const lastYear = Math.max(2026 + state.data.person.deceased.age, year);
+  const personAge = Number(state.data.person.age);
+  const deceasedAge = Number(state.data.person.deceased.age);
+  // Generate brackets through the projected year of death. The old formula
+  // (2026 + age at death) produced a date ~70 years beyond the simulation.
+  const deathYear =
+    Number.isFinite(personAge) && Number.isFinite(deceasedAge)
+      ? currentYear + Math.max(Math.min(deceasedAge - personAge, CONFIG.MAX_AGE), 0)
+      : currentYear + CONFIG.MAX_AGE;
+  const lastYear = Math.min(Math.max(deathYear, year), currentYear + CONFIG.MAX_AGE);
   for (let i = 2027; i <= lastYear; i++) {
     const previous = state.data.tax.brackets.at(-1);
     const newdata = previous.data.map((x) => ({
@@ -250,11 +337,7 @@ export function calculateTaxBracketsForAllYear(state, year) {
         : x.income,
     }));
     const yearsSince2026 = i - 2026;
-    const ageInYear = state.data.person.age + (i - currentYear);
-    const ageDeduction =
-      ageInYear >= 65
-        ? status.additionalStandardDeduction2026 * (1 + r) ** yearsSince2026
-        : 0;
+    const ageInYear = Number(state.data.person.age) + (i - currentYear);
 
     state.data.tax.brackets.push({
       year: i,
@@ -273,7 +356,10 @@ export function calculateTaxBracketsForAllYear(state, year) {
 export function getTaxBracketsForYear(state, year) {
   calculateTaxBracketsForAllYear(state, year);
   try {
-    return state.data.tax.brackets.find((x) => x.year === year);
+    return (
+      state.data.tax.brackets.find((x) => x.year === year) ??
+      state.data.tax.brackets.at(-1)
+    );
   } catch (ex) {
     console.error("year=", year, "ex=", ex);
   }

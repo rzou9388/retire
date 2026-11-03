@@ -6,6 +6,7 @@ export const TAX = {
   FICA_MEDICARE_RATE_OVER: 0.0235,
   CAPITAL_GAIN_RATE: 0.15,
   MEDICARE_SURTAX_RATE: 0.038,
+  EARLY_WITHDRAWAL_PENALTY_RATE: 0.1,
 };
 
 export const CONFIG = {
@@ -14,6 +15,9 @@ export const CONFIG = {
   FICA_SS_CEILING_2026: 184500,
   FICA_SS_CEILING_INCREASE: 0.0492,
   TAX_BRACKET_INCREASE: 0.016,
+  // Upper bound used to keep loops finite if a malformed share URL supplies
+  // an absurd life expectancy.
+  MAX_AGE: 120,
 };
 
 export const FILING_STATUSES = {
