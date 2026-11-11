@@ -24,6 +24,7 @@ export default defineComponent({
             <input id="retirementHealthInsurance" class="form-control" :value="actions.toDollar(state.data.spending.insurance)" @focus="e => { e.target.value = String(state.data.spending.insurance ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.spending.insurance = parsed; e.target.value = actions.toDollar(parsed); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.spending.insurance ?? 0); } }" type="text" step="1000" />
           </div>
         </div>
+        <hr/>
         <div>
           Your estimated yearly spending <b>before</b> retirement is
           <b>{{actions.toDollar(state.data.spending.beforeRetirement)}}</b>,

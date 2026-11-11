@@ -203,8 +203,7 @@ const app = createApp({
           <a href="https://github.com/rzou9388/retire">View on GitHub</a>
         </span>
         <span class="app-resource-item">
-          Cross-check your numbers:
-          <a href="https://my-after-work-plan.my-after-work-plan.workers.dev/" target="_blank">Open the other calculator</a>
+          If calculation below looks good: <a href="https://my-after-work-plan.my-after-work-plan.workers.dev/" target="_blank">plan your retirement next</a>
         </span>
       </div>
       <hr />
@@ -623,11 +622,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         }) => {
           const withdrawalTaxableIncome =
             taxableOrdinaryIncome + pretaxWithdrawal;
-          const taxableSS = calculateSSToTax(
-            withdrawalTaxableIncome,
-            ss,
-            this,
-          );
+          const taxableSS = calculateSSToTax(withdrawalTaxableIncome, ss, this);
           const ordinaryIncomeTax = this.calculateOrdinaryIncomeTaxForYear(
             withdrawalTaxableIncome + taxableSS,
             year,

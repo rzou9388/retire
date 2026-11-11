@@ -3,7 +3,7 @@ import { defineComponent } from "vue";
 export default defineComponent({
   name: "AgeTab",
   props: ["state", "actions"],
-  template: `
+  template: /* html */ `
     <div class="row">
       <div class="col-4">
         <label for="txtAge">Current Age:</label>

@@ -3,7 +3,7 @@ import { defineComponent } from "vue";
 export default defineComponent({
   name: "InfoTab",
   props: ["state", "actions"],
-  template: `
+  template: /* html */ `
     <details class="info-accordion">
       <summary class="info-accordion-summary">Projected Tax Rates</summary>
       <div class="info-accordion-body">

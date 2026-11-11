@@ -27,6 +27,8 @@ export default defineComponent({
         </div>
       </div>
     </div>
+
+    <hr/>
     <div>
       <h5>Taxes</h5>
       <div class="mt-3">
