@@ -154,6 +154,69 @@ function updateChart() {
   });
 }
 
+function clampNumber(value, fallback = 0) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
+
+function getAfterWorkPlanLink(data) {
+  const person = data?.person ?? {};
+  const currentAge = clampNumber(person.age, 0);
+  const currentYear = new Date().getFullYear();
+  const retirementAge = clampNumber(person.retirement?.age, currentAge);
+  const deceasedAge = clampNumber(person.deceased?.age, currentAge + 30);
+  const annualSalary =
+    clampNumber(person.salary, 0) + clampNumber(person.spouse?.salary, 0);
+  const annualSSIncome = clampNumber(person.ss?.perMonth, 0) * 12;
+  const pretaxBalance = clampNumber(person.pretaxBalance, 0);
+  const rothBalance = clampNumber(person.roth, 0);
+  const investmentBalance = clampNumber(person.investment, 0);
+  const totalPortfolioValue = pretaxBalance + rothBalance + investmentBalance;
+
+  const toStartYearNumber = (age) => Math.max(1, Math.round(age - currentAge + 1));
+
+  const params = new URLSearchParams();
+  params.set("equitiesInitialRatio", "100");
+  params.set("equitiesFinalRatio", "100");
+  params.set("bondsInitialRatio", "0");
+  params.set("bondsFinalRatio", "0");
+  params.set("cashInitialRatio", "0");
+  params.set("cashFinalRatio", "0");
+  params.set("cashGrowth", "6");
+  params.set("gkInitialWithdrawal", "120000");
+  params.set("gkLowerLimitAdjustment", "10");
+  params.set("gkModifiedWithdrawalRule", "true");
+  params.set("gkUpperLimitAdjustment", "10");
+  params.set("gkWithdrawalLowerLimit", "20");
+  params.set("gkWithdrawalUpperLimit", "20");
+  params.set("minWithdrawalLimit", "100000");
+  params.set("maxWithdrawalLimit", "200000");
+  params.set("minWithdrawalLimitEnabled", "true");
+  params.set("maxWithdrawalLimitEnabled", "true");
+  params.set("initialPortfolioValue", String(Math.round(totalPortfolioValue)));
+  params.set("numberOfYears", String(Math.max(1, Math.round(deceasedAge - currentAge))));
+  params.set("retirementStartingAge", String(retirementAge));
+  params.set("retirementStartAge", String(retirementAge));
+  params.set("birthYear", String(currentYear - currentAge));
+  params.set("pretaxGrowthRatePct", String(clampNumber(data?.annualReturn?.beforeRetirement, 6)));
+  params.set("rothGrowthRatePct", String(clampNumber(data?.annualReturn?.beforeRetirement, 6)));
+  params.set("brokerageGrowthRatePct", String(clampNumber(data?.annualReturn?.afterRetirement, 6)));
+  params.set("bondsGrowthRatePct", String(clampNumber(data?.annualReturn?.afterRetirement, 6)));
+  params.set("inflationRatePct", String(clampNumber(data?.inflation, 3)));
+  params.set("maxCashAllocationPct", "0");
+  params.set("includeTax", "true");
+  params.set("ssIncome", String(Math.round(annualSSIncome)));
+  params.set("ssStartAge", String(clampNumber(person.ss?.age, 62)));
+  params.set("rothConversionMode", "manual");
+  params.set("rothConversionStartAge", String(clampNumber(data?.rothConversion?.age, retirementAge)));
+  params.set("rothConversionBracketCeiling", "0.22");
+  params.set("optimizeRothConversions", "false");
+  params.set("optimizeWithdrawalOrder", "true");
+  const url = new URL("https://my-after-work-plan.my-after-work-plan.workers.dev/");
+  url.search = params.toString();
+  return url.toString();
+}
+
 const tabComponents = {
   age: defineAsyncComponent(() => import("./tabs/age-tab.js")),
   income: defineAsyncComponent(() => import("./tabs/income-tab.js")),
@@ -203,7 +266,7 @@ const app = createApp({
           <a href="https://github.com/rzou9388/retire">View on GitHub</a>
         </span>
         <span class="app-resource-item">
-          If calculation below looks good: <a href="https://my-after-work-plan.my-after-work-plan.workers.dev/" target="_blank">plan your retirement next</a>
+          If calculation below looks good: <a :href="afterWorkPlanLink" target="_blank">plan your retirement next</a>
         </span>
       </div>
       <hr />
@@ -282,6 +345,9 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
   computed: {
     currentTabComponent() {
       return this.tabComponents[this.activeTab] || this.tabComponents.age;
+    },
+    afterWorkPlanLink() {
+      return getAfterWorkPlanLink(this.data);
     },
     appVm() {
       return this;
