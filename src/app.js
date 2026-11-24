@@ -2,6 +2,7 @@ import { createApp, defineAsyncComponent } from "vue";
 import {
   encodeUserDataForUrl,
   loadInitialAppState,
+  serializeLocalStorageData,
   serializeUserData,
 } from "./default-state.js";
 import {
@@ -27,16 +28,18 @@ import {
 } from "./calculator.js";
 import { toDollar, toPercent } from "./formatters.js";
 
-function updateChart() {
+function updateChart(yearlyData) {
   const chartParent = document.getElementById("chartParent");
   if (!chartParent) return;
+  if (!Array.isArray(yearlyData) || yearlyData.length === 0) {
+    chartParent.innerHTML = "";
+    chartParent.style.display = "none";
+    return;
+  }
   chartParent.innerHTML = "";
   chartParent.style.display = "none";
   chartParent.innerHTML = '<canvas id="chart1"></canvas>';
   chartParent.style.display = "block";
-  const savedData = JSON.parse(localStorage.getItem("data"));
-  if (!savedData || !savedData.yearlyData) return;
-  const yearlyData = savedData.yearlyData;
   const labels = yearlyData.map((x) => x.age);
   const data = {
     labels,
@@ -362,6 +365,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       return {
         calculate: (...args) => this.calculate(...args),
         recalculate: (...args) => this.recalculate(...args),
+        saveState: (...args) => this.saveState(...args),
         toDollar: (...args) => this.toDollar(...args),
         toPercent: (...args) => this.toPercent(...args),
         getTaxBracketsForYear: (year) => this.getTaxBracketsForYear(year),
@@ -451,14 +455,17 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       );
       this.data.medicare = this.mergeYearlyDataByAge(this.data.medicare);
 
-      window.setTimeout(updateChart, 200);
+      window.setTimeout(() => updateChart(this.data.yearlyData), 200);
     },
     recalculate() {
       estimateMedicarePremiumsForAllYears(this);
       this.calculate();
     },
     saveState() {
-      localStorage.setItem("data", JSON.stringify(this.data));
+      localStorage.setItem(
+        "data",
+        JSON.stringify(serializeLocalStorageData(this.data)),
+      );
     },
     mergeYearlyDataByAge(originalData) {
       const oneYearData = this.data.yearlyData.find(
@@ -934,7 +941,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
 });
 
 app.config.globalProperties.window = window;
-app.mount("#app");
+const appVm = app.mount("#app");
 
 window.resetDivTab = function resetDivTab() {
   const divTabs = document.getElementById("divtabs");
@@ -944,4 +951,4 @@ window.setDivTabClass = function setDivTabClass(cla) {
   const divTabs = document.getElementById("divtabs");
   if (divTabs) divTabs.className = cla;
 };
-window.updateChart = updateChart;
+window.updateChart = () => updateChart(appVm.data.yearlyData);

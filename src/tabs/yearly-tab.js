@@ -93,7 +93,7 @@ export default defineComponent({
     },
   },
   template: /* html */ `
-    <div class="row">
+    <div class="row" @change="actions.saveState">
       <div class="form-check col-1">
         <input class="form-check-input" id="col-age" type="checkbox" v-model="state.data.columns.age" />
         <label class="form-check-label" for="col-age">Age</label>

@@ -198,6 +198,13 @@ export function serializeUserData(data) {
   };
 }
 
+export function serializeLocalStorageData(data) {
+  return {
+    ...serializeUserData(data),
+    columns: { ...data.columns },
+  };
+}
+
 export function encodeUserDataForUrl(data) {
   const bytes = new TextEncoder().encode(JSON.stringify(data));
   let binary = "";
@@ -286,40 +293,29 @@ export function loadInitialAppState() {
 
   const savedData = JSON.parse(localStorage.getItem("data"));
   if (savedData) {
-    savedData.tax.brackets = [];
-    savedData.tax.filingStatus ??= "marriedFilingJointly";
-    savedData.medicare.premiums = [];
-    delete savedData.medicare.lookbackMagi;
-    savedData.rmd.age = RMD_AGE;
-    savedData.yearlyData = [];
-    savedData.investmentContributions ??= [];
+    const savedPerson = savedData.person ?? {};
+    const savedSpouse = savedPerson.spouse ?? {};
     const legacyMeritIncrease = savedData.meritIncrease ?? 2;
-    savedData.person.meritIncrease ??= legacyMeritIncrease;
-    savedData.person.spouse ??= {
-      age: savedData.person.age,
-      salary: 0,
+    const migratedData = {
+      ...savedData,
+      person: {
+        ...savedPerson,
+        meritIncrease: savedPerson.meritIncrease ?? legacyMeritIncrease,
+        spouse: {
+          ...savedSpouse,
+          age: savedSpouse.age ?? savedPerson.age,
+          meritIncrease:
+            savedSpouse.meritIncrease ?? legacyMeritIncrease,
+        },
+      },
     };
-    savedData.person.spouse.age ??= savedData.person.age;
-    savedData.person.spouse.salary ??= 0;
-    savedData.person.spouse.meritIncrease ??= legacyMeritIncrease;
-    savedData.person.spouse.ss ??= { age: 62, perMonth: 0 };
-    savedData.person.spouse.ss.age ??= 62;
-    savedData.person.spouse.ss.perMonth ??= 0;
-    savedData.contrib.spouse ??= {
-      employeePercent: 6,
-      employerPercent: 50,
-      totalPercent: 0,
-      roth401kPercent: 0,
-      rothTotalPercent: 0,
-      employerMatchUpTo: 6,
-    };
-    savedData.contrib.spouse.employeePercent ??= 6;
-    savedData.contrib.spouse.employerPercent ??= 50;
-    savedData.contrib.spouse.totalPercent ??= 0;
-    savedData.contrib.spouse.roth401kPercent ??= 0;
-    savedData.contrib.spouse.rothTotalPercent ??= 0;
-    savedData.contrib.spouse.employerMatchUpTo ??= 6;
-    return { data: savedData };
+    const appState = createDefaultAppState();
+    appState.data = mergeWithDefaults(appState.data, migratedData);
+    appState.data.tax.brackets = [];
+    appState.data.medicare.premiums = [];
+    appState.data.rmd.age = RMD_AGE;
+    appState.data.yearlyData = [];
+    return appState;
   }
   return createDefaultAppState();
 }

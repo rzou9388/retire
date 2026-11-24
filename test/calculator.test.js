@@ -4,6 +4,7 @@ import * as calculator from "../src/calculator.js";
 import {
   createDefaultAppState,
   loadInitialAppState,
+  serializeLocalStorageData,
   serializeUserData,
 } from "../src/default-state.js";
 
@@ -123,6 +124,7 @@ test("RMD age remains fixed at 75 in saved and shared state", () => {
     globalThis,
     "localStorage",
   );
+  let storedData = JSON.stringify(state.data);
   try {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
@@ -131,10 +133,17 @@ test("RMD age remains fixed at 75 in saved and shared state", () => {
     Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
       value: {
-        getItem: () => JSON.stringify(state.data),
+        getItem: () => storedData,
       },
     });
     assert.equal(loadInitialAppState().data.rmd.age, 75);
+
+    state.data.columns.contribRoth = true;
+    storedData = JSON.stringify(serializeLocalStorageData(state.data));
+    const loadedState = loadInitialAppState();
+    assert.equal(loadedState.data.columns.contribRoth, true);
+    assert.deepEqual(loadedState.data.yearlyData, []);
+    assert.equal(loadedState.data.rmd.lifetimeTable.length, 29);
   } finally {
     if (windowDescriptor) {
       Object.defineProperty(globalThis, "window", windowDescriptor);
@@ -147,6 +156,21 @@ test("RMD age remains fixed at 75 in saved and shared state", () => {
       delete globalThis.localStorage;
     }
   }
+});
+
+test("local storage serialization keeps inputs and columns, not calculated projections", () => {
+  const state = createDefaultAppState();
+  state.data.columns.contribRoth = true;
+  state.data.yearlyData = [{ year: 2026 }];
+  state.data.person.retirement.year = 2026;
+  state.data.tax.brackets = [{ threshold: 1 }];
+
+  const savedData = serializeLocalStorageData(state.data);
+
+  assert.equal(savedData.columns.contribRoth, true);
+  assert.equal("yearlyData" in savedData, false);
+  assert.deepEqual(savedData.person.retirement, { age: 60 });
+  assert.equal("brackets" in savedData.tax, false);
 });
 
 test("FICA applies the wage cap and additional Medicare rate", () => {
