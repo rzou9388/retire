@@ -236,14 +236,20 @@ const tabComponents = {
   info: defineAsyncComponent(() => import("./tabs/info-tab.js")),
 };
 
+function getInitialActiveTab() {
+  const savedTab = localStorage.getItem("activeTab");
+  return Object.prototype.hasOwnProperty.call(tabComponents, savedTab)
+    ? savedTab
+    : "age";
+}
+
 const app = createApp({
   data() {
     const state = loadInitialAppState();
     return {
       ...state,
-      activeTab: "age",
+      activeTab: getInitialActiveTab(),
       activeSummaryTab: "current",
-      containerClass: "col-6",
       shareStatus: "",
       tabs: [
         { id: "age", label: "Age" },
@@ -358,6 +364,9 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
     afterWorkPlanLink() {
       return getAfterWorkPlanLink(this.data);
     },
+    containerClass() {
+      return this.activeTab === "yearly" ? "col-12" : "col-6";
+    },
     appVm() {
       return this;
     },
@@ -377,7 +386,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
   methods: {
     selectTab(tabId) {
       this.activeTab = tabId;
-      this.containerClass = tabId === "yearly" ? "col-12" : "col-6";
+      localStorage.setItem("activeTab", tabId);
     },
     resetData() {
       localStorage.clear();
