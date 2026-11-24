@@ -85,10 +85,10 @@ export default defineComponent({
     },
     getNetWorthTooltip(yearly) {
       return [
-        `Tax-deferred balance: ${this.toDisplayDollar(yearly.pretaxBalance, yearly)}`,
-        `Roth balance: ${this.toDisplayDollar(yearly.roth, yearly)}`,
-        `Investment balance: ${this.toDisplayDollar(yearly.investment, yearly)}`,
-        `Net worth: ${this.toDisplayDollar(yearly.netWorth, yearly)}`,
+        `Year-end tax-deferred balance: ${this.toDisplayDollar(yearly.yearEndPretaxBalance, yearly)}`,
+        `Year-end Roth balance: ${this.toDisplayDollar(yearly.yearEndRothBalance, yearly)}`,
+        `Year-end investment balance: ${this.toDisplayDollar(yearly.yearEndInvestmentBalance, yearly)}`,
+        `Year-end net worth: ${this.toDisplayDollar(yearly.yearEndNetWorth, yearly)}`,
       ].join("\n");
     },
   },
@@ -152,7 +152,7 @@ export default defineComponent({
       </div>
       <div class="form-check col">
         <input class="form-check-input" id="col-net" type="checkbox" v-model="state.data.columns.netWorth" />
-        <label class="form-check-label" for="col-net">Net Worth</label>
+        <label class="form-check-label" for="col-net">Year-End Net Worth</label>
       </div>
     </div>
     <div class="d-flex justify-content-end align-items-center mb-2">
@@ -177,7 +177,7 @@ export default defineComponent({
         <th v-if="state.data.columns.medicare">Medicare</th>
         <th v-if="state.data.columns.ss">Social Security</th>
         <th title="FICA, Federal, State, Ordinary Income and Capital Gains" v-if="state.data.columns.tax">Taxes</th>
-        <th v-if="state.data.columns.netWorth">Net Worth</th>
+        <th v-if="state.data.columns.netWorth">Year-End Net Worth</th>
       </thead>
       <tbody>
         <tr v-for="yearly in state.data.yearlyData" :class="{ retirementAge: yearly.age === state.data.person.retirement.age, rmdAge: yearly.age === state.data.rmd.age, medicareAge: yearly.age === state.data.medicare.age, ssAge: yearly.age === state.data.person.ss.age, noPenaltyAge: yearly.age === state.data.noPenaltyWithdraw.age }" :title="yearly.title">
@@ -195,7 +195,7 @@ export default defineComponent({
           <td v-if="state.data.columns.medicare"><span :class="{negative: yearly.medicare > 0}">-{{toDisplayDollar(yearly.medicare, yearly)}}</span></td>
           <td v-if="state.data.columns.ss"><span :class="{positive: yearly.ss > 0}">{{toDisplayDollar(yearly.ss, yearly)}}</span></td>
           <td v-if="state.data.columns.tax"><span :class="{negative: yearly.tax > 0}" :title="getTaxTooltip(yearly)">-{{toDisplayDollar(yearly.tax, yearly)}}</span></td>
-          <td v-if="state.data.columns.netWorth"><span :class="{negative: yearly.netWorth < 0, positive: yearly.netWorth > 0}" :title="getNetWorthTooltip(yearly)">{{toDisplayDollar(yearly.netWorth, yearly)}}</span></td>
+          <td v-if="state.data.columns.netWorth"><span :class="{negative: yearly.yearEndNetWorth < 0, positive: yearly.yearEndNetWorth > 0}" :title="getNetWorthTooltip(yearly)">{{toDisplayDollar(yearly.yearEndNetWorth, yearly)}}</span></td>
         </tr>
       </tbody>
     </table>

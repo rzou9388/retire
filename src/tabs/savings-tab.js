@@ -45,7 +45,8 @@ export default defineComponent({
     </div>
     <hr />
     <div>
-      <h5>Net worth <b>{{actions.toDollar(state.data.person.roth + state.data.person.investment + state.data.person.pretaxBalance)}}</b>.</h5>
+      <h5>Current net worth (balances entered today): <b>{{actions.toDollar(state.data.person.roth + state.data.person.investment + state.data.person.pretaxBalance)}}</b>.</h5>
+      <p>Yearly projections show year-end net worth after projected returns, contributions, withdrawals, spending, and cash flows.</p>
     </div>
   `,
 });

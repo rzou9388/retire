@@ -30,6 +30,8 @@ export const UNIFORM_LIFETIME_TABLE = [
   [100, 6.4],
 ];
 
+const RMD_AGE = 75;
+
 export function createDefaultAppState() {
   return {
     activeSummaryTab: "current",
@@ -75,9 +77,12 @@ export function createDefaultAppState() {
       },
       noPenaltyWithdraw: { age: 60 },
       inflation: 2.8,
-      medicare: { age: 65, premiums: [] },
+      medicare: {
+        age: 65,
+        premiums: [],
+      },
       rmd: {
-        age: 75,
+        age: RMD_AGE,
         pretaxBalance: 0,
         year: 0,
         lifetimeTable: UNIFORM_LIFETIME_TABLE,
@@ -103,7 +108,12 @@ export function createDefaultAppState() {
         pretaxBalance: 500000,
         salary: 150000,
         meritIncrease: 2,
-        spouse: { salary: 0, meritIncrease: 2 },
+        spouse: {
+          age: 50,
+          salary: 0,
+          meritIncrease: 2,
+          ss: { age: 62, perMonth: 0 },
+        },
         retirement: {
           age: 60,
           year: 0,
@@ -145,8 +155,10 @@ export function serializeUserData(data) {
     ]),
     noPenaltyWithdraw: { age: data.noPenaltyWithdraw.age },
     inflation: data.inflation,
-    medicare: { age: data.medicare.age },
-    rmd: { age: data.rmd.age },
+    medicare: {
+      age: data.medicare.age,
+    },
+    rmd: { age: RMD_AGE },
     contrib: {
       employeePercent: data.contrib.employeePercent,
       employerPercent: data.contrib.employerPercent,
@@ -165,8 +177,13 @@ export function serializeUserData(data) {
       salary: data.person.salary,
       meritIncrease: data.person.meritIncrease,
       spouse: {
+        age: data.person.spouse.age,
         salary: data.person.spouse.salary,
         meritIncrease: data.person.spouse.meritIncrease,
+        ss: {
+          age: data.person.spouse.ss.age,
+          perMonth: data.person.spouse.ss.perMonth,
+        },
       },
       retirement: { age: data.person.retirement.age },
       deceased: { age: data.person.deceased.age },
@@ -233,6 +250,10 @@ function loadQueryData() {
     }
     const appState = createDefaultAppState();
     appState.data = mergeWithDefaults(appState.data, inputData);
+    appState.data.rmd.age = RMD_AGE;
+    if (inputData.person?.spouse?.age == null) {
+      appState.data.person.spouse.age = appState.data.person.age;
+    }
     const url = new URL(window.location.href);
     url.searchParams.delete("data");
     window.history.replaceState(
@@ -268,13 +289,22 @@ export function loadInitialAppState() {
     savedData.tax.brackets = [];
     savedData.tax.filingStatus ??= "marriedFilingJointly";
     savedData.medicare.premiums = [];
+    delete savedData.medicare.lookbackMagi;
+    savedData.rmd.age = RMD_AGE;
     savedData.yearlyData = [];
     savedData.investmentContributions ??= [];
     const legacyMeritIncrease = savedData.meritIncrease ?? 2;
     savedData.person.meritIncrease ??= legacyMeritIncrease;
-    savedData.person.spouse ??= { salary: 0 };
+    savedData.person.spouse ??= {
+      age: savedData.person.age,
+      salary: 0,
+    };
+    savedData.person.spouse.age ??= savedData.person.age;
     savedData.person.spouse.salary ??= 0;
     savedData.person.spouse.meritIncrease ??= legacyMeritIncrease;
+    savedData.person.spouse.ss ??= { age: 62, perMonth: 0 };
+    savedData.person.spouse.ss.age ??= 62;
+    savedData.person.spouse.ss.perMonth ??= 0;
     savedData.contrib.spouse ??= {
       employeePercent: 6,
       employerPercent: 50,

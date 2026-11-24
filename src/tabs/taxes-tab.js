@@ -46,14 +46,14 @@ export default defineComponent({
       <div class="mt-3">
         <div>
           <h6><b>Social Security benefits tax: </b></h6>
-          Depending on your 'provisional income', 0%-85% of SSN income is taxed.
+          Depending on provisional income, a worksheet calculates the taxable portion of benefits, up to 85%.
           'Provisional income' includes gross income (wages, interest, dividend, pension, rent income), tax-free interest (municipal bond) and 1/2 of SS Benefits.
           <ul>
             <li>Single and head of household: less than $25,000 = 0%, between $25,000 and $34,000 = 50%, above $34,000 = 85%.</li>
             <li>Married filing jointly: less than $32,000 = 0%, between $32,000 and $44,000 = 50%, above $44,000 = 85%.</li>
             <li>Note: provisional income is not inflation adjusted.</li>
           </ul>
-          The resulting percentage of SS Benefits is subject to ordinary income tax rate.
+          The calculated taxable portion of Social Security benefits is subject to ordinary income tax rates.
           <br />Note: The calculation assumes there's no state tax for SS benefits.
           <br />Note: Roth IRA distributions are not included in the provisional income calculation.
         </div>

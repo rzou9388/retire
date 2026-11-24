@@ -4,17 +4,6 @@ export default defineComponent({
   name: "IncomeTab",
   props: ["state", "actions"],
   template: /* html */ `
-    <div class="row mb-3">
-      <div class="col-md-4">
-        <label for="filingStatus">Federal Filing Status:</label>
-        <select id="filingStatus" class="form-select" v-model="state.data.tax.filingStatus" @change="actions.recalculate">
-          <option value="marriedFilingJointly">Married filing jointly</option>
-          <option value="single">Single</option>
-          <option value="headOfHousehold">Head of household</option>
-        </select>
-        <small class="form-text">Head of household generally requires a qualifying person and paying more than half the cost of keeping up a home.</small>
-      </div>
-    </div>
     <div class="row income-person-row">
       <h6>Self</h6>
       <div class="col-md-2">
@@ -61,7 +50,7 @@ export default defineComponent({
     </div>
     <hr />
     <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" class="row income-person-row">
-      <h6>Spouse</h6>
+      <h6>Spouse Income</h6>
       <div class="col-md-2">
         <label for="spouseSalary">Annual Salary:</label>
         <div class="input-group">
@@ -101,6 +90,20 @@ export default defineComponent({
         <div class="input-group">
           <input id="spouseMatchUpTo" class="form-control" v-model="state.data.contrib.spouse.employerMatchUpTo" type="number" min="0" max="10" step="1" @change="actions.calculate" />
           <span class="input-group-text">%</span>
+        </div>
+      </div>
+    </div>
+    <hr v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" />
+    <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" class="row mb-3">
+      <h6>Spouse Social Security</h6>
+      <div class="col-4">
+        <label for="spouseSSBenefitAge">Benefit Age (62-70):</label>
+        <input id="spouseSSBenefitAge" class="form-control" v-model.number="state.data.person.spouse.ss.age" type="number" @change="actions.recalculate" min="62" max="70" />
+      </div>
+      <div class="col-4">
+        <label for="spouseMonthlySocialSecurity">Monthly Benefit at Age {{state.data.person.spouse.ss.age}}:</label>
+        <div class="input-group">
+          <input id="spouseMonthlySocialSecurity" class="form-control" :value="actions.toDollar(state.data.person.spouse.ss.perMonth, 2)" @focus="e => { e.target.value = String(state.data.person.spouse.ss.perMonth ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.spouse.ss.perMonth = parsed; e.target.value = actions.toDollar(parsed, 2); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.spouse.ss.perMonth ?? 0, 2); } }" type="text" min="0" step="100" />
         </div>
       </div>
     </div>
@@ -158,13 +161,13 @@ export default defineComponent({
         Your estimated annual 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.totalPercent / 100)}}</b> for you.
       </div>
       <div v-if="state.data.contrib.rothTotalPercent > 0">
-        Your estimated annual Roth 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.rothTotalPercent / 100)}}</b> for you.
+        Your estimated annual Roth 401(k) employee contribution is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.rothTotalPercent / 100)}}</b> for you. Employer matching is credited to your tax-deferred balance.
       </div>
       <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly' && state.data.person.spouse.salary > 0 && state.data.contrib.spouse.totalPercent > 0">
         Your spouse's estimated annual 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.totalPercent / 100)}}</b>.
       </div>
       <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly' && state.data.person.spouse.salary > 0 && state.data.contrib.spouse.rothTotalPercent > 0">
-        Your spouse's estimated annual Roth 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.rothTotalPercent / 100)}}</b>.
+        Your spouse's estimated annual Roth 401(k) employee contribution is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.rothTotalPercent / 100)}}</b>. Employer matching is credited to the tax-deferred balance.
       </div>
     </div>
   `,

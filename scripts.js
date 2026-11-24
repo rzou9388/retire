@@ -13,7 +13,7 @@ function updateChart() {
         labels: labels,
         datasets: [{
             label: 'Post-tax Balance',
-            data: yearlyData.map(x => x.investment),
+            data: yearlyData.map(x => x.yearEndInvestmentBalance),
             borderColor: '#2563eb',
             backgroundColor: 'rgba(37, 99, 235, 0.3)',
             borderWidth: 2,
@@ -24,7 +24,7 @@ function updateChart() {
             stack: 'balances'
         }, {
             label: 'Roth Balance',
-            data: yearlyData.map(x => x.roth),
+            data: yearlyData.map(x => x.yearEndRothBalance),
             borderColor: '#0f9f8f',
             backgroundColor: 'rgba(15, 159, 143, 0.3)',
             borderWidth: 2,
@@ -35,7 +35,7 @@ function updateChart() {
             stack: 'balances'
         }, {
             label: 'Pretax Balance',
-            data: yearlyData.map(x => x.pretaxBalance),
+            data: yearlyData.map(x => x.yearEndPretaxBalance),
             borderColor: '#8b5cf6',
             backgroundColor: 'rgba(139, 92, 246, 0.3)',
             borderWidth: 2,
@@ -45,8 +45,8 @@ function updateChart() {
             fill: true,
             stack: 'balances'
         }, {
-            label: 'Total Balance',
-            data: yearlyData.map(x => x.investment + x.roth + x.pretaxBalance),
+            label: 'Year-End Net Worth',
+            data: yearlyData.map(x => x.yearEndNetWorth),
             borderColor: '#0f172a',
             backgroundColor: '#0f172a',
             borderWidth: 3,

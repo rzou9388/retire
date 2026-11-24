@@ -6,6 +6,12 @@
 
 This calculator helps with retirement planning, it takes into account your current savings, income, and based on historical rates, projects tax brackets, medicare premiums, etc to calculate your yearly balances for your retirement years.
 
+Savings balances are entered as current amounts. The yearly projection reports year-end net worth after projected returns and that year's modeled cash flows; each following year starts with the prior year's projected year-end balances.
+
+## Run calculation tests
+
+Run the automated regression suite with `npm test` (Node.js is required).
+
 The calculator takes into account the following:
 
 1. RMDs, Roth Conversions
