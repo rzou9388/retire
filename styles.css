@@ -129,6 +129,10 @@ h3 {
     --bs-gutter-x: 1.25rem;
 }
 
+.income-person-row > .income-row-break {
+    min-height: 1rem;
+}
+
 label {
     margin-bottom: 6px;
     font-weight: 600;

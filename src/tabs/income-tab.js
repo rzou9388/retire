@@ -19,6 +19,7 @@ export default defineComponent({
           <span class="input-group-text">%</span>
         </div>
       </div>
+      <div class="w-100 income-row-break"></div>
       <div class="col-md-2">
         <label for="employee401k">401(k) Contribution:</label>
         <div class="input-group">
@@ -47,6 +48,17 @@ export default defineComponent({
           <span class="input-group-text">%</span>
         </div>
       </div>
+      <div class="w-100 income-row-break"></div>
+      <div class="col-4">
+        <label for="ssBenefitAge">Social Security Benefit Age (62-70):</label>
+        <input id="ssBenefitAge" class="form-control" v-model="state.data.person.ss.age" type="number" @change="actions.recalculate" min="62" max="70" />
+      </div>
+      <div class="col-4">
+        <label :for="'monthlySocialSecurity'">Monthly Social Security Income (age <b>{{state.data.person.ss.age}}</b>):</label>
+        <div class="input-group">
+          <input id="monthlySocialSecurity" class="form-control" :value="actions.toDollar(state.data.person.ss.perMonth, 2)" @focus="e => { e.target.value = String(state.data.person.ss.perMonth ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.ss.perMonth = parsed; e.target.value = actions.toDollar(parsed, 2); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.ss.perMonth ?? 0, 2); } }" type="text" min="0" step="100" />
+        </div>
+      </div>
     </div>
     <hr />
     <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" class="row income-person-row">
@@ -64,6 +76,7 @@ export default defineComponent({
           <span class="input-group-text">%</span>
         </div>
       </div>
+      <div class="w-100 income-row-break"></div>
       <div class="col-md-2">
         <label for="spouse401k">401(k) Contribution:</label>
         <div class="input-group">
@@ -92,31 +105,15 @@ export default defineComponent({
           <span class="input-group-text">%</span>
         </div>
       </div>
-    </div>
-    <hr v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" />
-    <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" class="row mb-3">
-      <h6>Spouse Social Security</h6>
+      <div class="w-100 income-row-break"></div>
       <div class="col-4">
-        <label for="spouseSSBenefitAge">Benefit Age (62-70):</label>
+        <label for="spouseSSBenefitAge">Social Security Benefit Age (62-70):</label>
         <input id="spouseSSBenefitAge" class="form-control" v-model.number="state.data.person.spouse.ss.age" type="number" @change="actions.recalculate" min="62" max="70" />
       </div>
       <div class="col-4">
-        <label for="spouseMonthlySocialSecurity">Monthly Benefit at Age {{state.data.person.spouse.ss.age}}:</label>
+        <label for="spouseMonthlySocialSecurity">Monthly Social Security Income (age <b>{{state.data.person.spouse.ss.age}}</b>):</label>
         <div class="input-group">
           <input id="spouseMonthlySocialSecurity" class="form-control" :value="actions.toDollar(state.data.person.spouse.ss.perMonth, 2)" @focus="e => { e.target.value = String(state.data.person.spouse.ss.perMonth ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.spouse.ss.perMonth = parsed; e.target.value = actions.toDollar(parsed, 2); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.spouse.ss.perMonth ?? 0, 2); } }" type="text" min="0" step="100" />
-        </div>
-      </div>
-    </div>
-    <hr />
-    <div class="row">
-      <div class="col-4">
-        <label for="ssBenefitAge">Social Security Benefit Age (62-70):</label>
-        <input id="ssBenefitAge" class="form-control" v-model="state.data.person.ss.age" type="number" @change="actions.recalculate" min="62" max="70" />
-      </div>
-      <div class="col-4">
-        <label :for="'monthlySocialSecurity'">Monthly Social Security Income (age <b>{{state.data.person.ss.age}}</b>):</label>
-        <div class="input-group">
-          <input id="monthlySocialSecurity" class="form-control" :value="actions.toDollar(state.data.person.ss.perMonth, 2)" @focus="e => { e.target.value = String(state.data.person.ss.perMonth ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.ss.perMonth = parsed; e.target.value = actions.toDollar(parsed, 2); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.ss.perMonth ?? 0, 2); } }" type="text" min="0" step="100" />
         </div>
       </div>
     </div>
