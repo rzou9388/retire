@@ -182,7 +182,8 @@ function getAfterWorkPlanLink(data) {
   const investmentBalance = clampNumber(person.investment, 0);
   const totalPortfolioValue = pretaxBalance + rothBalance + investmentBalance;
 
-  const toStartYearNumber = (age) => Math.max(1, Math.round(age - currentAge + 1));
+  const toStartYearNumber = (age) =>
+    Math.max(1, Math.round(age - currentAge + 1));
 
   const params = new URLSearchParams();
   params.set("equitiesInitialRatio", "100");
@@ -203,25 +204,45 @@ function getAfterWorkPlanLink(data) {
   params.set("minWithdrawalLimitEnabled", "true");
   params.set("maxWithdrawalLimitEnabled", "true");
   params.set("initialPortfolioValue", String(Math.round(totalPortfolioValue)));
-  params.set("numberOfYears", String(Math.max(1, Math.round(deceasedAge - currentAge))));
+  params.set(
+    "numberOfYears",
+    String(Math.max(1, Math.round(deceasedAge - currentAge))),
+  );
   params.set("retirementStartingAge", String(retirementAge));
   params.set("retirementStartAge", String(retirementAge));
   params.set("birthYear", String(currentYear - currentAge));
-  params.set("pretaxGrowthRatePct", String(clampNumber(data?.annualReturn?.beforeRetirement, 6)));
-  params.set("rothGrowthRatePct", String(clampNumber(data?.annualReturn?.beforeRetirement, 6)));
-  params.set("brokerageGrowthRatePct", String(clampNumber(data?.annualReturn?.afterRetirement, 6)));
-  params.set("bondsGrowthRatePct", String(clampNumber(data?.annualReturn?.afterRetirement, 6)));
+  params.set(
+    "pretaxGrowthRatePct",
+    String(clampNumber(data?.annualReturn?.beforeRetirement, 6)),
+  );
+  params.set(
+    "rothGrowthRatePct",
+    String(clampNumber(data?.annualReturn?.beforeRetirement, 6)),
+  );
+  params.set(
+    "brokerageGrowthRatePct",
+    String(clampNumber(data?.annualReturn?.afterRetirement, 6)),
+  );
+  params.set(
+    "bondsGrowthRatePct",
+    String(clampNumber(data?.annualReturn?.afterRetirement, 6)),
+  );
   params.set("inflationRatePct", String(clampNumber(data?.inflation, 3)));
   params.set("maxCashAllocationPct", "0");
   params.set("includeTax", "true");
   params.set("ssIncome", String(Math.round(annualSSIncome)));
   params.set("ssStartAge", String(clampNumber(person.ss?.age, 62)));
   params.set("rothConversionMode", "manual");
-  params.set("rothConversionStartAge", String(clampNumber(data?.rothConversion?.age, retirementAge)));
+  params.set(
+    "rothConversionStartAge",
+    String(clampNumber(data?.rothConversion?.age, retirementAge)),
+  );
   params.set("rothConversionBracketCeiling", "0.22");
   params.set("optimizeRothConversions", "false");
   params.set("optimizeWithdrawalOrder", "true");
-  const url = new URL("https://my-after-work-plan.my-after-work-plan.workers.dev/");
+  const url = new URL(
+    "https://my-after-work-plan.my-after-work-plan.workers.dev/",
+  );
   url.search = params.toString();
   return url.toString();
 }
@@ -316,8 +337,8 @@ const app = createApp({
               <pre>current net worth:            <b>{{ toDollar(data.person.roth + data.person.pretaxBalance + data.person.investment) }}</b>
 projected year-end net worth: <b v-if="data.yearlyData.length">{{ toDollar(data.yearlyData[0].yearEndNetWorth) }}</b><b v-else>Unavailable</b>
 investment (posttax):         <b>{{ toDollar(data.person.investment) }}</b>
-Roth IRA/401k:                 <b>{{ toDollar(data.person.roth) }}</b>
-IRA/401k:                      <b>{{ toDollar(data.person.pretaxBalance) }}</b></pre>
+Roth IRA/401k:                <b>{{ toDollar(data.person.roth) }}</b>
+IRA/401k:                     <b>{{ toDollar(data.person.pretaxBalance) }}</b></pre>
             </div>
             <div v-show="activeSummaryTab === 'retirement'" class="tab-pane fade show active" role="tabpanel">
               <h6>Retirement year <b>{{ data.person.retirement.year }}</b> (age <b>{{ data.person.retirement.age }}</b>)</h6>
@@ -574,11 +595,12 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
           );
           spendingAmount = spending.afterRetirement * monthsLeft;
           if (age < this.data.medicare.age) {
-            spendingAmount += calculateInsuranceSpendingForYear(
-              this.data.spending,
-              this.data.inflation,
-              year,
-            ) * monthsLeft;
+            spendingAmount +=
+              calculateInsuranceSpendingForYear(
+                this.data.spending,
+                this.data.inflation,
+                year,
+              ) * monthsLeft;
           }
         }
 
@@ -673,11 +695,10 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
               getIncomeForBracketAndYear(this, year, bracket) -
               taxableOrdinaryIncome +
               conversionConfig.offset;
-            dist =
-              Math.min(
-                Math.max(pretaxBalance - rmd, 0),
-                Math.max(totalDistAllowed, 0),
-              );
+            dist = Math.min(
+              Math.max(pretaxBalance - rmd, 0),
+              Math.max(totalDistAllowed, 0),
+            );
             conversionAmount = dist;
           }
         }
