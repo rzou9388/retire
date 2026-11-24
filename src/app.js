@@ -98,6 +98,7 @@ function updateChart(yearlyData) {
     type: "line",
     data,
     options: {
+      responsive: true,
       maintainAspectRatio: false,
       interaction: {
         mode: "index",
@@ -297,7 +298,7 @@ const app = createApp({
             </div>
           </div>
         </div>
-        <div class="col-6 overflow-auto">
+        <div class="col-7 overflow-auto">
           <div id="chartParent" class="chart-panel" style="height:450px;display:none"></div>
           <hr />
           <nav>
@@ -365,7 +366,7 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       return getAfterWorkPlanLink(this.data);
     },
     containerClass() {
-      return this.activeTab === "yearly" ? "col-12" : "col-6";
+      return this.activeTab === "yearly" ? "col-12" : "col-5";
     },
     appVm() {
       return this;
