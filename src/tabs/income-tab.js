@@ -161,13 +161,13 @@ export default defineComponent({
         Your estimated annual 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.totalPercent / 100)}}</b> for you.
       </div>
       <div v-if="state.data.contrib.rothTotalPercent > 0">
-        Your estimated annual Roth 401(k) employee contribution is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.rothTotalPercent / 100)}}</b> for you. Employer matching is credited to your tax-deferred balance.
+        Your estimated annual Roth 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.salary * state.data.contrib.rothTotalPercent / 100)}}</b> for you. Roth employer matching is included in taxable income.
       </div>
       <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly' && state.data.person.spouse.salary > 0 && state.data.contrib.spouse.totalPercent > 0">
         Your spouse's estimated annual 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.totalPercent / 100)}}</b>.
       </div>
       <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly' && state.data.person.spouse.salary > 0 && state.data.contrib.spouse.rothTotalPercent > 0">
-        Your spouse's estimated annual Roth 401(k) employee contribution is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.rothTotalPercent / 100)}}</b>. Employer matching is credited to the tax-deferred balance.
+        Your spouse's estimated annual Roth 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.rothTotalPercent / 100)}}</b>. Roth employer matching is included in taxable income.
       </div>
     </div>
   `,

@@ -25,6 +25,32 @@ export function calculateEmployerMatch(
   return Math.min(eligibleDeferrals, matchLimit) * matchRate;
 }
 
+export function calculateEmployerMatchAllocation(
+  employeePercent,
+  rothEmployeePercent,
+  employerPercent,
+  matchUpToPercent,
+) {
+  const traditionalDeferrals = Math.max(Number(employeePercent) || 0, 0);
+  const rothDeferrals = Math.max(Number(rothEmployeePercent) || 0, 0);
+  const totalDeferrals = traditionalDeferrals + rothDeferrals;
+  const totalMatch = calculateEmployerMatch(
+    traditionalDeferrals,
+    rothDeferrals,
+    employerPercent,
+    matchUpToPercent,
+  );
+
+  if (totalDeferrals === 0) {
+    return { traditional: 0, roth: 0 };
+  }
+
+  return {
+    traditional: (totalMatch * traditionalDeferrals) / totalDeferrals,
+    roth: (totalMatch * rothDeferrals) / totalDeferrals,
+  };
+}
+
 export function calculateRequiredMinimumDistribution(balance, divisor) {
   const normalizedBalance = Math.max(Number(balance) || 0, 0);
   const normalizedDivisor = Number(divisor);

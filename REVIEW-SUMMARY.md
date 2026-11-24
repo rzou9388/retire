@@ -58,7 +58,7 @@ The income passed into this calculation also omits modeled investment gains and 
 
 **Locations:** `src/calculator.js:4-12`, `src/app.js:340-355`, `src/app.js:530-541`
 
-Matching is calculated once against combined eligible traditional and Roth deferrals and credited to pretax savings.
+Matching is calculated once against combined eligible traditional and Roth deferrals, then allocated between tax-deferred and Roth savings in proportion to each deferral type. Roth employer matching is included in taxable income.
 
 The calculator independently computes an employer match for traditional and Roth employee deferrals. If someone contributes 6% to each account with a 50%-up-to-6% match, it models a 9% traditional contribution plus a 9% Roth contribution: 18% total, although the combined employee deferral is 12% and a 3% match would make 15% total under that example. The Roth contribution calculation also credits its match to the Roth balance, without an input for a plan that permits Roth employer contributions.
 

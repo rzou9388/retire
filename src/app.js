@@ -5,7 +5,7 @@ import {
   serializeUserData,
 } from "./default-state.js";
 import {
-  calculateEmployerMatch,
+  calculateEmployerMatchAllocation,
   calculateRequiredMinimumDistribution,
   allocateRequiredDistribution,
   calculateCashFlowForPeriod,
@@ -408,25 +408,27 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       }
     },
     calculate() {
+      const selfEmployerMatch = calculateEmployerMatchAllocation(
+        this.data.contrib.employeePercent,
+        this.data.contrib.roth401kPercent,
+        this.data.contrib.employerPercent,
+        this.data.contrib.employerMatchUpTo,
+      );
       this.data.contrib.totalPercent =
-        this.data.contrib.employeePercent +
-        calculateEmployerMatch(
-          this.data.contrib.employeePercent,
-          this.data.contrib.roth401kPercent,
-          this.data.contrib.employerPercent,
-          this.data.contrib.employerMatchUpTo,
-        );
-      this.data.contrib.rothTotalPercent = this.data.contrib.roth401kPercent;
+        this.data.contrib.employeePercent + selfEmployerMatch.traditional;
+      this.data.contrib.rothTotalPercent =
+        this.data.contrib.roth401kPercent + selfEmployerMatch.roth;
+      const spouseEmployerMatch = calculateEmployerMatchAllocation(
+        this.data.contrib.spouse.employeePercent,
+        this.data.contrib.spouse.roth401kPercent,
+        this.data.contrib.spouse.employerPercent,
+        this.data.contrib.spouse.employerMatchUpTo,
+      );
       this.data.contrib.spouse.totalPercent =
         this.data.contrib.spouse.employeePercent +
-        calculateEmployerMatch(
-          this.data.contrib.spouse.employeePercent,
-          this.data.contrib.spouse.roth401kPercent,
-          this.data.contrib.spouse.employerPercent,
-          this.data.contrib.spouse.employerMatchUpTo,
-        );
+        spouseEmployerMatch.traditional;
       this.data.contrib.spouse.rothTotalPercent =
-        this.data.contrib.spouse.roth401kPercent;
+        this.data.contrib.spouse.roth401kPercent + spouseEmployerMatch.roth;
 
       this.calculateYearly();
       this.saveState();
@@ -598,27 +600,33 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
         const roth401kAnnual =
           selfSalary * (this.data.contrib.roth401kPercent / 100) +
           spouseSalary * (this.data.contrib.spouse.roth401kPercent / 100);
-        const employerMatchAnnual =
-          (selfSalary *
-            calculateEmployerMatch(
-              this.data.contrib.employeePercent,
-              this.data.contrib.roth401kPercent,
-              this.data.contrib.employerPercent,
-              this.data.contrib.employerMatchUpTo,
-            )) /
-            100 +
-          (spouseSalary *
-            calculateEmployerMatch(
-              this.data.contrib.spouse.employeePercent,
-              this.data.contrib.spouse.roth401kPercent,
-              this.data.contrib.spouse.employerPercent,
-              this.data.contrib.spouse.employerMatchUpTo,
-            )) /
-            100;
-        const k401 = (k401EmployeeAnnual + employerMatchAnnual) * monthsLeft;
-        const roth401k = roth401kAnnual * monthsLeft;
+        const selfEmployerMatch = calculateEmployerMatchAllocation(
+          this.data.contrib.employeePercent,
+          this.data.contrib.roth401kPercent,
+          this.data.contrib.employerPercent,
+          this.data.contrib.employerMatchUpTo,
+        );
+        const spouseEmployerMatch = calculateEmployerMatchAllocation(
+          this.data.contrib.spouse.employeePercent,
+          this.data.contrib.spouse.roth401kPercent,
+          this.data.contrib.spouse.employerPercent,
+          this.data.contrib.spouse.employerMatchUpTo,
+        );
+        const traditionalEmployerMatchAnnual =
+          (selfSalary * selfEmployerMatch.traditional +
+            spouseSalary * spouseEmployerMatch.traditional) /
+          100;
+        const rothEmployerMatchAnnual =
+          (selfSalary * selfEmployerMatch.roth +
+            spouseSalary * spouseEmployerMatch.roth) /
+          100;
+        const k401 =
+          (k401EmployeeAnnual + traditionalEmployerMatchAnnual) * monthsLeft;
+        const roth401k =
+          (roth401kAnnual + rothEmployerMatchAnnual) * monthsLeft;
 
-        let taxableEarnedIncome = salary - k401EmployeeAnnual;
+        let taxableEarnedIncome =
+          salary - k401EmployeeAnnual + rothEmployerMatchAnnual;
         let taxableOrdinaryIncome = taxableEarnedIncome;
 
         let rmd = 0;

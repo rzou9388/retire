@@ -218,6 +218,26 @@ test("employer match is calculated once across traditional and Roth deferrals", 
   assert.equal(calculator.calculateEmployerMatch(6, 6, 50, 6), 3);
 });
 
+test("shared employer match is allocated by traditional and Roth deferrals", () => {
+  const rothOnlyMatch = calculator.calculateEmployerMatchAllocation(0, 8, 50, 6);
+  const traditionalOnlyMatch = calculator.calculateEmployerMatchAllocation(
+    8,
+    0,
+    50,
+    6,
+  );
+  assert.deepEqual(
+    calculator.calculateEmployerMatchAllocation(8, 8, 50, 6),
+    { traditional: 1.5, roth: 1.5 },
+  );
+  assert.deepEqual(
+    rothOnlyMatch,
+    { traditional: 0, roth: 3 },
+  );
+  assert.deepEqual(traditionalOnlyMatch, { traditional: 3, roth: 0 });
+  assert.equal(8 + rothOnlyMatch.roth, 8 + traditionalOnlyMatch.traditional);
+});
+
 test("employer match is zero when there are no eligible employee deferrals", () => {
   assert.equal(calculator.calculateEmployerMatch(0, 0, 50, 6), 0);
 });

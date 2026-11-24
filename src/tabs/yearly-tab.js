@@ -53,7 +53,7 @@ export default defineComponent({
             ]
           : [
               `Previous row balance: ${this.toDisplayDollar(yearly.pretaxPriorYearBalance, yearly)}`,
-              `401(k) contribution added: ${this.toDisplayDollar(yearly.pretaxPriorYearContribution, yearly)}`,
+              `401(k) contribution and match added: ${this.toDisplayDollar(yearly.pretaxPriorYearContribution, yearly)}`,
               `Distribution or conversion: -${this.toDisplayDollar(yearly.pretaxPriorYearDistribution, yearly)}`,
               `Previous spending withdrawal: -${this.toDisplayDollar(yearly.pretaxPriorYearWithdrawal, yearly)}`,
               `Balance entering year: ${this.toDisplayDollar(yearly.pretaxStartingBalance, yearly)}`,
@@ -73,7 +73,7 @@ export default defineComponent({
           : [
               `Previous row balance: ${this.toDisplayDollar(yearly.rothPriorYearBalance, yearly)}`,
               `Pretax distribution added: ${this.toDisplayDollar(yearly.rothPriorYearDistribution, yearly)}`,
-              `Roth 401(k) contribution: ${this.toDisplayDollar(yearly.rothPriorYearContribution, yearly)}`,
+              `Roth 401(k) contribution and match: ${this.toDisplayDollar(yearly.rothPriorYearContribution, yearly)}`,
               `Roth withdrawal: -${this.toDisplayDollar(yearly.rothPriorYearWithdrawal, yearly)}`,
               `Balance entering year: ${this.toDisplayDollar(yearly.rothStartingBalance, yearly)}`,
             ];
@@ -108,11 +108,11 @@ export default defineComponent({
       </div>
       <div class="form-check col">
         <input class="form-check-input" id="col-contrib" type="checkbox" v-model="state.data.columns.contrib" />
-        <label class="form-check-label" for="col-contrib">401K Contrib {{actions.toPercent(state.data.contrib.totalPercent)}}</label>
+        <label class="form-check-label" for="col-contrib">401K Contrib</label>
       </div>
       <div class="form-check col">
         <input class="form-check-input" id="col-contribRoth" type="checkbox" v-model="state.data.columns.contribRoth" />
-        <label class="form-check-label" for="col-contribRoth">Roth 401K {{actions.toPercent(state.data.contrib.rothTotalPercent)}}</label>
+        <label class="form-check-label" for="col-contribRoth">Roth 401K</label>
       </div>
       <div class="form-check col">
         <input class="form-check-input" id="col-rmd" type="checkbox" v-model="state.data.columns.rmd" />
@@ -166,8 +166,8 @@ export default defineComponent({
         <th v-if="state.data.columns.age">Age</th>
         <th v-if="state.data.columns.year">Year</th>
         <th v-if="state.data.columns.salary">Salary</th>
-        <th v-if="state.data.columns.contrib">401k Contrib</th>
-        <th v-if="state.data.columns.contribRoth">Roth 401k Contrib</th>
+        <th title="Includes traditional employee contributions and their share of employer match" v-if="state.data.columns.contrib">401k Contrib</th>
+        <th title="Includes Roth employee contributions and their share of employer match" v-if="state.data.columns.contribRoth">Roth 401k Contrib</th>
         <th title="Required Minimum Distribution" v-if="state.data.columns.rmd">RMD</th>
         <th v-if="state.data.columns.spending" title="inflation adjusted">Spending</th>
         <th v-if="state.data.columns.conversionAmount">Roth Conversion</th>
