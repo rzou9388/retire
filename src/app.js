@@ -325,7 +325,7 @@ const app = createApp({
         </span>
       </div>
       <hr />
-      <div class="row">
+      <div class="row calculator-layout">
         <div :class="containerClass">
           <nav>
             <div class="nav nav-tabs" role="tablist">
