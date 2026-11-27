@@ -4,7 +4,8 @@ export default defineComponent({
   name: "SpendingTab",
   props: ["state", "actions"],
   template: `
-    <div>
+    <section class="section-card">
+      <h6 class="section-card-heading">Spending Assumptions</h6>
       <div class="row">
         <div class="col-4">
           <label for="beforeRetirementSpending">Yearly (Before Retirement)</label>
@@ -24,41 +25,43 @@ export default defineComponent({
             <input id="retirementHealthInsurance" class="form-control" :value="actions.toDollar(state.data.spending.insurance)" @focus="e => { e.target.value = String(state.data.spending.insurance ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.spending.insurance = parsed; e.target.value = actions.toDollar(parsed); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.spending.insurance ?? 0); } }" type="text" step="1000" />
           </div>
         </div>
-        <hr/>
-        <div>
-          Your estimated yearly spending <b>before</b> retirement is
-          <b>{{actions.toDollar(state.data.spending.beforeRetirement)}}</b>,
-          monthly spending is <b>{{actions.toDollar(state.data.spending.beforeRetirement / 12)}}</b>,
-          this should include:
-          <ul>
-            <li>Housing</li>
-            <li>Your expensive kid(s) - tuition, activities, etc</li>
-          </ul>
-        </div>
-        <div>
-          Your estimated yearly spending <b>after</b> retirement is
-          <b>{{actions.toDollar(state.data.spending.afterRetirement)}}</b>, monthly spending is
-          <b>{{actions.toDollar(state.data.spending.afterRetirement / 12)}}</b>:
-          <ul>
-            <li>Lower housing expenses, and hopefully no more mortgage</li>
-            <li>Higher medical expenses</li>
-            <li>More traveling</li>
-          </ul>
-        </div>
-        <div>
-          Your estimated starting Medicare year <b>{{state.data.medicare.year}}</b>
-        </div>
-        <div v-if="state.data.person.retirement.age < state.data.medicare.age">
-          When you retire in <b>{{state.data.person.retirement.age - state.data.person.age}}</b> years at
-          <b>{{state.data.person.retirement.age}}</b>,
-          you are not yet qualified for Medicare, your estimated your monthly health insurance out
-          of pocket before Medicare kicks in is
-          <b>{{actions.toDollar(state.data.spending.insurance / 12)}}</b>.
-        </div>
-        <div class="mt-3">
-          Your spending will be adjusted for <b>{{actions.toPercent(state.data.inflation)}}</b> inflation every year.
-        </div>
       </div>
-    </div>
+    </section>
+    <section class="section-card">
+      <h6 class="section-card-heading">Estimated Spending Summary</h6>
+      <div>
+        Your estimated yearly spending <b>before</b> retirement is
+        <b>{{actions.toDollar(state.data.spending.beforeRetirement)}}</b>,
+        monthly spending is <b>{{actions.toDollar(state.data.spending.beforeRetirement / 12)}}</b>,
+        this should include:
+        <ul>
+          <li>Housing</li>
+          <li>Your expensive kid(s) - tuition, activities, etc</li>
+        </ul>
+      </div>
+      <div>
+        Your estimated yearly spending <b>after</b> retirement is
+        <b>{{actions.toDollar(state.data.spending.afterRetirement)}}</b>, monthly spending is
+        <b>{{actions.toDollar(state.data.spending.afterRetirement / 12)}}</b>:
+        <ul>
+          <li>Lower housing expenses, and hopefully no more mortgage</li>
+          <li>Higher medical expenses</li>
+          <li>More traveling</li>
+        </ul>
+      </div>
+      <div>
+        Your estimated starting Medicare year <b>{{state.data.medicare.year}}</b>
+      </div>
+      <div v-if="state.data.person.retirement.age < state.data.medicare.age">
+        When you retire in <b>{{state.data.person.retirement.age - state.data.person.age}}</b> years at
+        <b>{{state.data.person.retirement.age}}</b>,
+        you are not yet qualified for Medicare, your estimated your monthly health insurance out
+        of pocket before Medicare kicks in is
+        <b>{{actions.toDollar(state.data.spending.insurance / 12)}}</b>.
+      </div>
+      <div class="mt-3">
+        Your spending will be adjusted for <b>{{actions.toPercent(state.data.inflation)}}</b> inflation every year.
+      </div>
+    </section>
   `,
 });

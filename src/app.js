@@ -290,7 +290,7 @@ const app = createApp({
       ...state,
       activeTab: getInitialActiveTab(),
       activeSummaryTab: "current",
-      showTodaysDollars: false,
+      showTodaysDollars: localStorage.getItem("showTodaysDollars") === "true",
       shareStatus: "",
       tabs: [
         { id: "age", label: "Age" },
@@ -431,7 +431,8 @@ IRA/401k:               <b>{{ displayDollar(data.person.deceased.pretaxBalance, 
     },
   },
   watch: {
-    showTodaysDollars() {
+    showTodaysDollars(value) {
+      localStorage.setItem("showTodaysDollars", String(value));
       updateChart(
         this.data.yearlyData,
         this.data.inflation,

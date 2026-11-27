@@ -4,8 +4,8 @@ export default defineComponent({
   name: "IncomeTab",
   props: ["state", "actions"],
   template: /* html */ `
-    <section class="income-person-section">
-      <h6 class="income-person-heading">Self</h6>
+    <section class="section-card">
+      <h6 class="section-card-heading">Self</h6>
       <div class="row income-person-row">
       <div class="col-md-8">
         <label for="selfSalary">Annual Salary:</label>
@@ -62,8 +62,8 @@ export default defineComponent({
       </div>
       </div>
     </section>
-    <section v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" class="income-person-section">
-      <h6 class="income-person-heading">Spouse</h6>
+    <section v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" class="section-card">
+      <h6 class="section-card-heading">Spouse</h6>
       <div class="row income-person-row">
       <div class="col-md-8">
         <label for="spouseSalary">Annual Salary:</label>
@@ -120,10 +120,9 @@ export default defineComponent({
       </div>
       </div>
     </section>
-    <hr />
-    <div>
-      <div class="d-flex align-items-center justify-content-between">
-        <h5>Additional Income or Expenses</h5>
+    <section class="section-card">
+      <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+        <h5 class="section-card-heading flex-grow-1 mb-0">Additional Income or Expenses</h5>
         <button class="btn btn-outline-primary btn-sm" type="button" @click="state.data.investmentContributions.push({ label: '', type: 'income', age: state.data.person.age, amount: 0 }); actions.calculate()">Add event</button>
       </div>
       <p>Add one-time income, such as selling a home, or expenses, such as buying a car, at the selected age. Income is added to investments; taxes on proceeds are not estimated.</p>
@@ -151,10 +150,9 @@ export default defineComponent({
           <button class="btn btn-outline-danger btn-sm mt-4" type="button" :aria-label="'Remove ' + (contribution.label || 'income or expense')" @click="state.data.investmentContributions.splice(index, 1); actions.calculate()">&times;</button>
         </div>
       </div>
-    </div>
-    <hr />
-    <div>
-      <h5>Summary</h5>
+    </section>
+    <section class="section-card">
+      <h5 class="section-card-heading">Summary</h5>
       Your current earned income is <b>{{actions.toDollar(state.data.person.salary + (state.data.tax.filingStatus === 'marriedFilingJointly' ? state.data.person.spouse.salary : 0))}}</b>, you
       expect annual merit increases of <b>{{actions.toPercent(state.data.person.meritIncrease)}}</b> for you<span v-if="state.data.tax.filingStatus === 'marriedFilingJointly'"> and <b>{{actions.toPercent(state.data.person.spouse.meritIncrease)}}</b> for your spouse</span>.
       <div v-if="state.data.contrib.totalPercent > 0">
@@ -169,6 +167,6 @@ export default defineComponent({
       <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly' && state.data.person.spouse.salary > 0 && state.data.contrib.spouse.rothTotalPercent > 0">
         Your spouse's estimated annual Roth 401(k) contribution including employer match is <b>{{actions.toDollar(state.data.person.spouse.salary * state.data.contrib.spouse.rothTotalPercent / 100)}}</b>. Roth employer matching is included in taxable income.
       </div>
-    </div>
+    </section>
   `,
 });

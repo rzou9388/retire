@@ -93,7 +93,9 @@ export default defineComponent({
     },
   },
   template: /* html */ `
-    <div class="row" @change="actions.saveState">
+    <section class="section-card">
+      <h6 class="section-card-heading">Yearly Projection</h6>
+      <div class="row" @change="actions.saveState">
       <div class="form-check col-1">
         <input class="form-check-input" id="col-age" type="checkbox" v-model="state.data.columns.age" />
         <label class="form-check-label" for="col-age">Age</label>
@@ -154,7 +156,7 @@ export default defineComponent({
         <input class="form-check-input" id="col-net" type="checkbox" v-model="state.data.columns.netWorth" />
         <label class="form-check-label" for="col-net">Year-End Net Worth</label>
       </div>
-    </div>
+      </div>
     <div class="d-flex justify-content-end align-items-center mb-2">
       <div class="form-check form-switch mb-0">
         <input class="form-check-input" id="today-dollars" type="checkbox" role="switch" v-model="showTodaysDollars" />
@@ -199,5 +201,6 @@ export default defineComponent({
         </tr>
       </tbody>
     </table>
+    </section>
   `,
 });

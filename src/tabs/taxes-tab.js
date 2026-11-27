@@ -4,32 +4,34 @@ export default defineComponent({
   name: "TaxesTab",
   props: ["state", "actions"],
   template: /* html */ `
-    <div class="row">
-      <div class="col-4">
-        <label for="stateTaxBefore">State Tax (Before Retirement)</label>
-        <div class="input-group">
-          <input id="stateTaxBefore" class="form-control" v-model="state.data.tax.state.beforeRetirement" type="number" min="0" step="1" @change="actions.calculate" />
-          <span class="input-group-text">%</span>
+    <section class="section-card">
+      <h6 class="section-card-heading">Tax Assumptions</h6>
+      <div class="row">
+        <div class="col-4">
+          <label for="stateTaxBefore">State Tax (Before Retirement)</label>
+          <div class="input-group">
+            <input id="stateTaxBefore" class="form-control" v-model="state.data.tax.state.beforeRetirement" type="number" min="0" step="1" @change="actions.calculate" />
+            <span class="input-group-text">%</span>
+          </div>
+        </div>
+        <div class="col-4">
+          <label for="stateTaxAfter">State Tax (After Retirement)</label>
+          <div class="input-group">
+            <input id="stateTaxAfter" class="form-control" v-model="state.data.tax.state.afterRetirement" type="number" min="0" step="1" @change="actions.calculate" />
+            <span class="input-group-text">%</span>
+          </div>
+        </div>
+        <div class="col-4">
+          <label for="inflation">Inflation</label>
+          <div class="input-group">
+            <input id="inflation" class="form-control" v-model="state.data.inflation" type="number" step="1" @change="actions.calculate" />
+            <span class="input-group-text">%</span>
+          </div>
         </div>
       </div>
-      <div class="col-4">
-        <label for="stateTaxAfter">State Tax (After Retirement)</label>
-        <div class="input-group">
-          <input id="stateTaxAfter" class="form-control" v-model="state.data.tax.state.afterRetirement" type="number" min="0" step="1" @change="actions.calculate" />
-          <span class="input-group-text">%</span>
-        </div>
-      </div>
-      <div class="col-4">
-        <label for="inflation">Inflation</label>
-        <div class="input-group">
-          <input id="inflation" class="form-control" v-model="state.data.inflation" type="number" step="1" @change="actions.calculate" />
-          <span class="input-group-text">%</span>
-        </div>
-      </div>
-    </div>
-    <hr/>
-    <div>
-      <h5>Taxes</h5>
+    </section>
+    <section class="section-card">
+      <h6 class="section-card-heading">Taxes</h6>
       <div class="mt-3">
         <ul>
           <li>Federal Ordinary Income Tax uses the selected filing status (see projected tax brackets below) and increases bracket ceilings by 1.6% each year.</li>
@@ -43,30 +45,28 @@ export default defineComponent({
           <li>Long-term capital gains can't push you into a higher tax bracket</li>
         </ul>
       </div>
-      <div class="mt-3">
-        <div>
-          <h6><b>Social Security benefits tax: </b></h6>
-          Depending on provisional income, a worksheet calculates the taxable portion of benefits, up to 85%.
-          'Provisional income' includes gross income (wages, interest, dividend, pension, rent income), tax-free interest (municipal bond) and 1/2 of SS Benefits.
-          <ul>
-            <li>Single and head of household: less than $25,000 = 0%, between $25,000 and $34,000 = 50%, above $34,000 = 85%.</li>
-            <li>Married filing jointly: less than $32,000 = 0%, between $32,000 and $44,000 = 50%, above $44,000 = 85%.</li>
-            <li>Note: provisional income is not inflation adjusted.</li>
-          </ul>
-          The calculated taxable portion of Social Security benefits is subject to ordinary income tax rates.
-          <br />Note: The calculation assumes there's no state tax for SS benefits.
-          <br />Note: Roth IRA distributions are not included in the provisional income calculation.
-        </div>
-        <hr />
-        <div>
-          <h6><b>Buckets to withdraw to minimize tax: </b></h6>
-          <ul>
-            <li>Use tax-deferred accounts (401k, traditional IRA) to reduce taxable income in early retirement years when you may have little to no income, and fill up the lower tax brackets first.</li>
-            <li>Use Roth accounts for tax free growth and tax free withdraws in later years, especially after RMD starts, to avoid pushing you into higher tax brackets.</li>
-            <li>Use post-tax investment account for more flexibility, but be mindful of capital gain tax. The 0% long-term capital-gain threshold depends on filing status.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    </section>
+    <section class="section-card">
+      <h6 class="section-card-heading">Social Security Benefits Tax</h6>
+      <p>Depending on provisional income, a worksheet calculates the taxable portion of benefits, up to 85%. 'Provisional income' includes gross income (wages, interest, dividend, pension, rent income), tax-free interest (municipal bond) and 1/2 of SS Benefits.</p>
+      <ul>
+        <li>Single and head of household: less than $25,000 = 0%, between $25,000 and $34,000 = 50%, above $34,000 = 85%.</li>
+        <li>Married filing jointly: less than $32,000 = 0%, between $32,000 and $44,000 = 50%, above $44,000 = 85%.</li>
+        <li>Note: provisional income is not inflation adjusted.</li>
+      </ul>
+      <p>
+        The calculated taxable portion of Social Security benefits is subject to ordinary income tax rates.
+        <br />Note: The calculation assumes there's no state tax for SS benefits.
+        <br />Note: Roth IRA distributions are not included in the provisional income calculation.
+      </p>
+    </section>
+    <section class="section-card">
+      <h6 class="section-card-heading">Buckets to Withdraw to Minimize Tax</h6>
+      <ul>
+        <li>Use tax-deferred accounts (401k, traditional IRA) to reduce taxable income in early retirement years when you may have little to no income, and fill up the lower tax brackets first.</li>
+        <li>Use Roth accounts for tax free growth and tax free withdraws in later years, especially after RMD starts, to avoid pushing you into higher tax brackets.</li>
+        <li>Use post-tax investment account for more flexibility, but be mindful of capital gain tax. The 0% long-term capital-gain threshold depends on filing status.</li>
+      </ul>
+    </section>
   `,
 });
