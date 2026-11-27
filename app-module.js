@@ -501,12 +501,14 @@ const app = createApp({
         return 0;
       }
 
-      let yearlySs = this.data.person.ss.perMonth * 12;
-      for (let i = this.data.person.ss.age + 1; i <= age; i++) {
-        yearlySs = yearlySs * (1 + this.data.inflation / 100);
-      }
+      const yearlySs = this.data.person.ss.perMonth * 12;
+      const yearsFromToday = age - this.data.person.age;
+      if (yearsFromToday <= 0) return yearlySs;
 
-      return yearlySs;
+      return (
+        yearlySs *
+        (1 + this.data.inflation / 100) ** yearsFromToday
+      );
     },
 
     /**

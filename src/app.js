@@ -21,6 +21,7 @@ import {
   getRowTitle,
   calculateCapitalGainTax,
   calculateFica,
+  convertToTodaysDollars,
   estimateMedicarePremiumsForAllYears,
   getTaxBracketsForYear as getTaxBracketsForYearHelper,
   getIncomeForBracketAndYear,
@@ -28,9 +29,13 @@ import {
 } from "./calculator.js";
 import { toDollar, toPercent } from "./formatters.js";
 
-function updateChart(yearlyData) {
+let chartInstance;
+
+function updateChart(yearlyData, inflation, showTodaysDollars) {
   const chartParent = document.getElementById("chartParent");
   if (!chartParent) return;
+  chartInstance?.destroy();
+  chartInstance = null;
   if (!Array.isArray(yearlyData) || yearlyData.length === 0) {
     chartParent.innerHTML = "";
     chartParent.style.display = "none";
@@ -40,13 +45,20 @@ function updateChart(yearlyData) {
   chartParent.style.display = "none";
   chartParent.innerHTML = '<canvas id="chart1"></canvas>';
   chartParent.style.display = "block";
+  const currentYear = new Date().getFullYear();
+  const displayAmount = (amount, year) =>
+    showTodaysDollars
+      ? convertToTodaysDollars(amount, year, inflation, currentYear)
+      : amount;
   const labels = yearlyData.map((x) => x.age);
   const data = {
     labels,
     datasets: [
       {
         label: "Post-tax Balance",
-        data: yearlyData.map((x) => x.yearEndInvestmentBalance),
+        data: yearlyData.map((x) =>
+          displayAmount(x.yearEndInvestmentBalance, x.year),
+        ),
         borderColor: "#2563eb",
         backgroundColor: "rgba(37, 99, 235, 0.3)",
         borderWidth: 2,
@@ -58,7 +70,9 @@ function updateChart(yearlyData) {
       },
       {
         label: "Roth Balance",
-        data: yearlyData.map((x) => x.yearEndRothBalance),
+        data: yearlyData.map((x) =>
+          displayAmount(x.yearEndRothBalance, x.year),
+        ),
         borderColor: "#0f9f8f",
         backgroundColor: "rgba(15, 159, 143, 0.3)",
         borderWidth: 2,
@@ -70,7 +84,9 @@ function updateChart(yearlyData) {
       },
       {
         label: "Pretax Balance",
-        data: yearlyData.map((x) => x.yearEndPretaxBalance),
+        data: yearlyData.map((x) =>
+          displayAmount(x.yearEndPretaxBalance, x.year),
+        ),
         borderColor: "#8b5cf6",
         backgroundColor: "rgba(139, 92, 246, 0.3)",
         borderWidth: 2,
@@ -82,7 +98,9 @@ function updateChart(yearlyData) {
       },
       {
         label: "Year-End Net Worth",
-        data: yearlyData.map((x) => x.yearEndNetWorth),
+        data: yearlyData.map((x) =>
+          displayAmount(x.yearEndNetWorth, x.year),
+        ),
         borderColor: "#0f172a",
         backgroundColor: "#0f172a",
         borderWidth: 3,
@@ -94,7 +112,7 @@ function updateChart(yearlyData) {
       },
     ],
   };
-  new Chart(document.getElementById("chart1"), {
+  chartInstance = new Chart(document.getElementById("chart1"), {
     type: "line",
     data,
     options: {
@@ -272,6 +290,7 @@ const app = createApp({
       ...state,
       activeTab: getInitialActiveTab(),
       activeSummaryTab: "current",
+      showTodaysDollars: false,
       shareStatus: "",
       tabs: [
         { id: "age", label: "Age" },
@@ -319,7 +338,13 @@ const app = createApp({
             </div>
           </div>
         </div>
-        <div class="col-7 overflow-auto">
+        <div v-show="activeTab !== 'yearly'" class="col-7 overflow-auto">
+          <div class="d-flex justify-content-end align-items-center mb-2">
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" id="right-today-dollars" type="checkbox" role="switch" v-model="showTodaysDollars" />
+              <label class="form-check-label" for="right-today-dollars">Display amounts in today's dollars</label>
+            </div>
+          </div>
           <div id="chartParent" class="chart-panel" style="height:450px;display:none"></div>
           <hr />
           <nav>
@@ -334,45 +359,45 @@ const app = createApp({
           <div class="tab-content mt-3">
             <div v-show="activeSummaryTab === 'current'" class="tab-pane fade show active" role="tabpanel">
               <h6>Current year <b>{{ new Date().getFullYear() }}</b> (age <b>{{ data.person.age }}</b>)</h6>
-              <pre>current net worth:            <b>{{ toDollar(data.person.roth + data.person.pretaxBalance + data.person.investment) }}</b>
-projected year-end net worth: <b v-if="data.yearlyData.length">{{ toDollar(data.yearlyData[0].yearEndNetWorth) }}</b><b v-else>Unavailable</b>
-investment (posttax):         <b>{{ toDollar(data.person.investment) }}</b>
-Roth IRA/401k:                <b>{{ toDollar(data.person.roth) }}</b>
-IRA/401k:                     <b>{{ toDollar(data.person.pretaxBalance) }}</b></pre>
+              <pre>current net worth:            <b>{{ displayDollar(data.person.roth + data.person.pretaxBalance + data.person.investment, new Date().getFullYear()) }}</b>
+projected year-end net worth: <b v-if="data.yearlyData.length">{{ displayDollar(data.yearlyData[0].yearEndNetWorth, data.yearlyData[0].year) }}</b><b v-else>Unavailable</b>
+investment (posttax):         <b>{{ displayDollar(data.person.investment, new Date().getFullYear()) }}</b>
+Roth IRA/401k:                <b>{{ displayDollar(data.person.roth, new Date().getFullYear()) }}</b>
+IRA/401k:                     <b>{{ displayDollar(data.person.pretaxBalance, new Date().getFullYear()) }}</b></pre>
             </div>
             <div v-show="activeSummaryTab === 'retirement'" class="tab-pane fade show active" role="tabpanel">
               <h6>Retirement year <b>{{ data.person.retirement.year }}</b> (age <b>{{ data.person.retirement.age }}</b>)</h6>
-              <pre>net worth:              <b>{{ toDollar(data.person.retirement.roth + data.person.retirement.pretaxBalance + data.person.retirement.investment) }}</b>
-investment (posttax):   <b>{{ toDollar(data.person.retirement.investment) }}</b>
-Roth IRA/401k:          <b>{{ toDollar(data.person.retirement.roth) }}</b>
-IRA/401k:               <b>{{ toDollar(data.person.retirement.pretaxBalance) }}</b></pre>
+              <pre>net worth:              <b>{{ displayDollar(data.person.retirement.roth + data.person.retirement.pretaxBalance + data.person.retirement.investment, data.person.retirement.year) }}</b>
+investment (posttax):   <b>{{ displayDollar(data.person.retirement.investment, data.person.retirement.year) }}</b>
+Roth IRA/401k:          <b>{{ displayDollar(data.person.retirement.roth, data.person.retirement.year) }}</b>
+IRA/401k:               <b>{{ displayDollar(data.person.retirement.pretaxBalance, data.person.retirement.year) }}</b></pre>
               <div v-if="data.person.retirement.investment < 0" class="alert alert-danger mt-3">
-                Your current retirement plan cannot get you to <b>{{ data.person.retirement.age }}</b>, your post-tax balance will be <b>{{ toDollar(data.person.retirement.investment) }}</b>, try adjusting your retirement plan.
+                Your current retirement plan cannot get you to <b>{{ data.person.retirement.age }}</b>, your post-tax balance will be <b>{{ displayDollar(data.person.retirement.investment, data.person.retirement.year) }}</b>, try adjusting your retirement plan.
               </div>
               <p>After retirement, your spending and taxes are funded from your post-tax investment account until you reach <b>{{ data.noPenaltyWithdraw.age }}</b>.</p>
             </div>
             <div v-show="activeSummaryTab === 'withdraw'" class="tab-pane fade show active" role="tabpanel">
               <h6>Penalty free withdraw year <b>{{ data.noPenaltyWithdraw.year }}</b> (age <b>{{ data.noPenaltyWithdraw.age }}</b>)</h6>
-              <pre>net worth:              <b>{{ toDollar(data.noPenaltyWithdraw.roth + data.noPenaltyWithdraw.pretaxBalance + data.noPenaltyWithdraw.investment) }}</b>
-investment (posttax):   <b>{{ toDollar(data.noPenaltyWithdraw.investment) }}</b>
-Roth IRA/401k:          <b>{{ toDollar(data.noPenaltyWithdraw.roth) }}</b>
-IRA/401k:               <b>{{ toDollar(data.noPenaltyWithdraw.pretaxBalance) }}</b></pre>
+              <pre>net worth:              <b>{{ displayDollar(data.noPenaltyWithdraw.roth + data.noPenaltyWithdraw.pretaxBalance + data.noPenaltyWithdraw.investment, data.noPenaltyWithdraw.year) }}</b>
+investment (posttax):   <b>{{ displayDollar(data.noPenaltyWithdraw.investment, data.noPenaltyWithdraw.year) }}</b>
+Roth IRA/401k:          <b>{{ displayDollar(data.noPenaltyWithdraw.roth, data.noPenaltyWithdraw.year) }}</b>
+IRA/401k:               <b>{{ displayDollar(data.noPenaltyWithdraw.pretaxBalance, data.noPenaltyWithdraw.year) }}</b></pre>
               <p>After you reach age <b>{{ data.noPenaltyWithdraw.age }}</b>, you can withdraw from pretax accounts without penalty, though ordinary income tax will apply.</p>
             </div>
             <div v-show="activeSummaryTab === 'rmd'" class="tab-pane fade show active" role="tabpanel">
               <h6>Required Minimum Distribution year <b>{{ data.rmd.year }}</b> (age <b>{{ data.rmd.age }}</b>)</h6>
-              <pre>net worth:              <b>{{ toDollar(data.rmd.roth + data.rmd.pretaxBalance + data.rmd.investment) }}</b>
-investment (posttax):   <b>{{ toDollar(data.rmd.investment) }}</b>
-Roth IRA/401k:          <b>{{ toDollar(data.rmd.roth) }}</b>
-IRA/401k:               <b>{{ toDollar(data.rmd.pretaxBalance) }}</b></pre>
-              <p>Your pretax retirement accounts will have <b>{{ toDollar(data.rmd.pretaxBalance) }}</b> and your required minimum distribution is <b>{{ toDollar(data.rmd.rmd) }}</b>.</p>
+              <pre>net worth:              <b>{{ displayDollar(data.rmd.roth + data.rmd.pretaxBalance + data.rmd.investment, data.rmd.year) }}</b>
+investment (posttax):   <b>{{ displayDollar(data.rmd.investment, data.rmd.year) }}</b>
+Roth IRA/401k:          <b>{{ displayDollar(data.rmd.roth, data.rmd.year) }}</b>
+IRA/401k:               <b>{{ displayDollar(data.rmd.pretaxBalance, data.rmd.year) }}</b></pre>
+              <p>Your pretax retirement accounts will have <b>{{ displayDollar(data.rmd.pretaxBalance, data.rmd.year) }}</b> and your required minimum distribution is <b>{{ displayDollar(data.rmd.rmd, data.rmd.year) }}</b>.</p>
             </div>
             <div v-show="activeSummaryTab === 'end'" class="tab-pane fade show active" role="tabpanel">
               <h6>End of life year <b>{{ data.person.deceased.year }}</b> (age <b>{{ data.person.deceased.age }}</b>)</h6>
-              <pre>net worth:              <b>{{ toDollar(data.person.deceased.roth + data.person.deceased.pretaxBalance + data.person.deceased.investment) }}</b>
-investment (posttax):   <b>{{ toDollar(data.person.deceased.investment) }}</b>
-Roth IRA/401k:          <b>{{ toDollar(data.person.deceased.roth) }}</b>
-IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b></pre>
+              <pre>net worth:              <b>{{ displayDollar(data.person.deceased.roth + data.person.deceased.pretaxBalance + data.person.deceased.investment, data.person.deceased.year) }}</b>
+investment (posttax):   <b>{{ displayDollar(data.person.deceased.investment, data.person.deceased.year) }}</b>
+Roth IRA/401k:          <b>{{ displayDollar(data.person.deceased.roth, data.person.deceased.year) }}</b>
+IRA/401k:               <b>{{ displayDollar(data.person.deceased.pretaxBalance, data.person.deceased.year) }}</b></pre>
             </div>
           </div>
         </div>
@@ -405,7 +430,22 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       };
     },
   },
+  watch: {
+    showTodaysDollars() {
+      updateChart(
+        this.data.yearlyData,
+        this.data.inflation,
+        this.showTodaysDollars,
+      );
+    },
+  },
   methods: {
+    displayDollar(amount, year) {
+      const displayedAmount = this.showTodaysDollars
+        ? convertToTodaysDollars(amount, year, this.data.inflation)
+        : amount;
+      return this.toDollar(displayedAmount);
+    },
     selectTab(tabId) {
       this.activeTab = tabId;
       localStorage.setItem("activeTab", tabId);
@@ -486,7 +526,15 @@ IRA/401k:               <b>{{ toDollar(data.person.deceased.pretaxBalance) }}</b
       );
       this.data.medicare = this.mergeYearlyDataByAge(this.data.medicare);
 
-      window.setTimeout(() => updateChart(this.data.yearlyData), 200);
+      window.setTimeout(
+        () =>
+          updateChart(
+            this.data.yearlyData,
+            this.data.inflation,
+            this.showTodaysDollars,
+          ),
+        200,
+      );
     },
     recalculate() {
       estimateMedicarePremiumsForAllYears(this);
@@ -982,4 +1030,9 @@ window.setDivTabClass = function setDivTabClass(cla) {
   const divTabs = document.getElementById("divtabs");
   if (divTabs) divTabs.className = cla;
 };
-window.updateChart = () => updateChart(appVm.data.yearlyData);
+window.updateChart = () =>
+  updateChart(
+    appVm.data.yearlyData,
+    appVm.data.inflation,
+    appVm.showTodaysDollars,
+  );

@@ -122,6 +122,27 @@ export function calculateGain(ignoreRate, amount, rate) {
   return amount * (1 + rate / 100);
 }
 
+export function convertToTodaysDollars(
+  amount,
+  year,
+  inflation,
+  currentYear = new Date().getFullYear(),
+) {
+  const numericAmount = Number(amount);
+  const yearsFromToday = Number(year) - Number(currentYear);
+  const inflationRate = Number(inflation) / 100;
+  if (
+    !Number.isFinite(numericAmount) ||
+    !Number.isFinite(yearsFromToday) ||
+    !Number.isFinite(inflationRate) ||
+    yearsFromToday <= 0 ||
+    inflationRate <= -1
+  ) {
+    return numericAmount;
+  }
+  return numericAmount / (1 + inflationRate) ** yearsFromToday;
+}
+
 export function calculateInsuranceSpendingForYear(spending, inflation, year) {
   let ins = spending.insurance;
   for (let y = new Date().getFullYear() + 1; y <= year; y++) {
@@ -134,10 +155,11 @@ export function calculateSSBenefits(person, inflation, age) {
   if (age < person.ss.age) return 0;
 
   let yearlySs = person.ss.perMonth * 12;
-  for (let i = person.ss.age + 1; i <= age; i++) {
-    yearlySs = yearlySs * (1 + inflation / 100);
-  }
-  return yearlySs;
+  const currentAge = Number(person.age);
+  if (!Number.isFinite(currentAge) || age <= currentAge) return yearlySs;
+
+  const inflationRate = (Number(inflation) || 0) / 100;
+  return yearlySs * (1 + inflationRate) ** (age - currentAge);
 }
 
 export function calculateHouseholdSSBenefits(

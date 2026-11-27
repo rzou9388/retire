@@ -4,8 +4,9 @@ export default defineComponent({
   name: "IncomeTab",
   props: ["state", "actions"],
   template: /* html */ `
-    <div class="row income-person-row">
-      <h6>Self</h6>
+    <section class="income-person-section">
+      <h6 class="income-person-heading">Self</h6>
+      <div class="row income-person-row">
       <div class="col-md-8">
         <label for="selfSalary">Annual Salary:</label>
         <div class="input-group">
@@ -49,20 +50,21 @@ export default defineComponent({
         </div>
       </div>
       <div class="w-100 income-row-break"></div>
-      <div class="col-6">
+      <div class="col-5">
         <label for="ssBenefitAge">Social Security Benefit Age (62-70):</label>
         <input id="ssBenefitAge" class="form-control" v-model="state.data.person.ss.age" type="number" @change="actions.recalculate" min="62" max="70" />
       </div>
-      <div class="col-6">
-        <label :for="'monthlySocialSecurity'">Monthly Social Security Income (age <b>{{state.data.person.ss.age}}</b>):</label>
+      <div class="col-7">
+        <label :for="'monthlySocialSecurity'">Monthly Social Security Income in Today's Dollars:</label>
         <div class="input-group">
           <input id="monthlySocialSecurity" class="form-control" :value="actions.toDollar(state.data.person.ss.perMonth, 2)" @focus="e => { e.target.value = String(state.data.person.ss.perMonth ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.ss.perMonth = parsed; e.target.value = actions.toDollar(parsed, 2); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.ss.perMonth ?? 0, 2); } }" type="text" min="0" step="100" />
         </div>
       </div>
-    </div>
-    <hr />
-    <div v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" class="row income-person-row">
-      <h6>Spouse Income</h6>
+      </div>
+    </section>
+    <section v-if="state.data.tax.filingStatus === 'marriedFilingJointly'" class="income-person-section">
+      <h6 class="income-person-heading">Spouse</h6>
+      <div class="row income-person-row">
       <div class="col-md-8">
         <label for="spouseSalary">Annual Salary:</label>
         <div class="input-group">
@@ -106,17 +108,18 @@ export default defineComponent({
         </div>
       </div>
       <div class="w-100 income-row-break"></div>
-      <div class="col-6">
+      <div class="col-5">
         <label for="spouseSSBenefitAge">Social Security Benefit Age (62-70):</label>
         <input id="spouseSSBenefitAge" class="form-control" v-model.number="state.data.person.spouse.ss.age" type="number" @change="actions.recalculate" min="62" max="70" />
       </div>
-      <div class="col-6">
-        <label for="spouseMonthlySocialSecurity">Monthly Social Security Income (age <b>{{state.data.person.spouse.ss.age}}</b>):</label>
+      <div class="col-7">
+        <label for="spouseMonthlySocialSecurity">Monthly Social Security Income in Today's Dollars:</label>
         <div class="input-group">
           <input id="spouseMonthlySocialSecurity" class="form-control" :value="actions.toDollar(state.data.person.spouse.ss.perMonth, 2)" @focus="e => { e.target.value = String(state.data.person.spouse.ss.perMonth ?? 0); }" @blur="e => { const raw = String(e.target.value).replace(/[$,\s]/g, ''); const parsed = Number.parseFloat(raw); if (Number.isFinite(parsed)) { state.data.person.spouse.ss.perMonth = parsed; e.target.value = actions.toDollar(parsed, 2); actions.calculate(); } else { e.target.value = actions.toDollar(state.data.person.spouse.ss.perMonth ?? 0, 2); } }" type="text" min="0" step="100" />
         </div>
       </div>
-    </div>
+      </div>
+    </section>
     <hr />
     <div>
       <div class="d-flex align-items-center justify-content-between">

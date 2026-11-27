@@ -77,6 +77,33 @@ test("household Social Security combines both spouses' inflation-adjusted benefi
   );
 });
 
+test("future amounts convert to today's dollars for display", () => {
+  assert.ok(
+    Math.abs(
+      calculator.convertToTodaysDollars(1_210, 2028, 10, 2026) - 1_000,
+    ) < 0.0001,
+  );
+});
+
+test("current-year amounts remain unchanged in today's dollars", () => {
+  assert.equal(
+    calculator.convertToTodaysDollars(1_000, 2026, 10, 2026),
+    1_000,
+  );
+});
+
+test("Social Security benefit entered as today's dollars is inflated from current age", () => {
+  const yearlyBenefit = 2_000 * 12;
+  assert.equal(
+    calculator.calculateSSBenefits(
+      { age: 50, ss: { age: 62, perMonth: 2_000 } },
+      2.8,
+      62,
+    ),
+    yearlyBenefit * 1.028 ** 12,
+  );
+});
+
 test("single-filer Social Security excludes spouse benefits", () => {
   assert.equal(
     calculator.calculateHouseholdSSBenefits(
